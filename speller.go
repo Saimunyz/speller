@@ -1,0 +1,138 @@
+package speller
+
+import (
+	"compress/gzip"
+	"fmt"
+	"log"
+	"os"
+	"runtime"
+	"strings"
+	"time"
+
+	"github.com/Saimunyz/speller/internal/config"
+	"github.com/Saimunyz/speller/internal/spellcorrect"
+)
+
+type Speller struct {
+	spellcorrector *spellcorrect.SpellCorrector
+	cfg            *config.Config
+}
+
+// NewSpeller - creates new speller instance
+func NewSpeller() *Speller {
+	cfg, err := config.ReadConfigYML("config.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tokenizerWords := spellcorrect.NewSimpleTokenizer()
+	freq := spellcorrect.NewFrequencies(cfg.SpellerConfig.MinWordLength, cfg.SpellerConfig.MinWordFreq)
+
+	weights := []float64{cfg.SpellerConfig.UnigramWeight, cfg.SpellerConfig.BigramWeight, cfg.SpellerConfig.TrigramWeight}
+	sc := spellcorrect.NewSpellCorrector(tokenizerWords, freq, weights, cfg.SpellerConfig.AutoTrainMode)
+
+	spller := &Speller{
+		spellcorrector: sc,
+		cfg:            cfg,
+	}
+	return spller
+}
+
+// Train - train from zero n-grams model with specified in cfg datasets
+func (s *Speller) Train() {
+	file, err := os.Open(s.cfg.SpellerConfig.SentencesPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	gz, err := gzip.NewReader(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer gz.Close()
+
+	file2, err := os.Open(s.cfg.SpellerConfig.DictPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file2.Close()
+
+	gz2, err := gzip.NewReader(file2)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer gz2.Close()
+
+	log.Printf("starting training...")
+	t0 := time.Now()
+	s.spellcorrector.Train(gz, gz2)
+	t1 := time.Now()
+	log.Printf("Finished[%s]\n", t1.Sub(t0))
+
+	//free memory
+	runtime.GC()
+}
+
+//SpellCorrect - corrects all typos in a given query
+func (s *Speller) SpellCorrect(query string) string {
+	suggestions := s.spellcorrector.SpellCorrect(query)
+
+	// returns the most likely option
+	return strings.Join(suggestions[0].Tokens, " ")
+}
+
+// SpellCorrectAllSuggestions - returns top 10 corrections typos in a given query
+func (s *Speller) SpellCorrectAllSuggestions(query string) []string {
+	suggestions := s.spellcorrector.SpellCorrect(query)
+
+	topSugges := make([]string, 0, 10)
+
+	for i := 0; i < 10 && i < len(suggestions); i++ {
+		topSugges = append(topSugges, strings.Join(suggestions[i].Tokens, " "))
+	}
+
+	return topSugges
+}
+
+// SaveModel - saves trained speller model
+func (s *Speller) SaveModel(filename string) error {
+	fmt.Println("Model saving...")
+	err := s.spellcorrector.SaveModel(filename)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Model saved: %s\n", filename)
+
+	return nil
+}
+
+// LoadModel - loades trained speller model from file
+func (s *Speller) LoadModel(filename string) error {
+	t := time.Now()
+	fmt.Println("Model loading...")
+	err := s.spellcorrector.LoadModel(filename)
+	if err != nil {
+		return err
+	}
+
+	file2, err := os.Open(s.cfg.SpellerConfig.DictPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file2.Close()
+
+	gz, err := gzip.NewReader(file2)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer gz.Close()
+
+	err = s.spellcorrector.LoadFreqDict(gz)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Model loaded[%v]: %s\n", time.Since(t), filename)
+
+	return nil
+}
