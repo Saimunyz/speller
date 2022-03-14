@@ -1,6 +1,8 @@
 # speller
 Spelling correction using ngrams and symspell
 
+To work correctly, you need to have config.yaml locally and files from dataset folder
+
 ```
 	fmt.Println("Example of usage")
 	// create speller
