@@ -11,8 +11,8 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 .vscode
-datasets/en
-datasets/ru/test
-datasets/ru/big-sentences.txt.gz
+datasets/*
+models/*
+
 # Dependency directories (remove the comment below to include it)
 # vendor/

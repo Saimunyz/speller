@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
-	"encoding/json"
+	"encoding/gob"
 	"io"
 	"log"
 	"os"
@@ -49,14 +49,18 @@ func (o *Frequencies) SaveModel(filename string) error {
 
 	runtime.GC()
 
-	data, err := json.MarshalIndent(o, " ", " ")
+	var buff bytes.Buffer
+
+	enc := gob.NewEncoder(&buff)
+	err = enc.Encode(o)
 	if err != nil {
 		return err
 	}
 
 	runtime.GC()
 
-	_, err = w.Write(data)
+	_, err = w.Write(buff.Bytes())
+	// _, err = w.Write(data)
 	if err != nil {
 		return err
 	}
@@ -77,13 +81,15 @@ func (o *Frequencies) LoadModel(filename string) error {
 	}
 	defer gz.Close()
 
-	buff := bytes.Buffer{}
-
-	var data Frequencies
+	var (
+		data Frequencies
+		buff bytes.Buffer
+	)
 
 	io.Copy(&buff, gz)
 
-	err = json.Unmarshal(buff.Bytes(), &data)
+	dec := gob.NewDecoder(&buff)
+	err = dec.Decode(&data)
 	if err != nil {
 		return err
 	}
