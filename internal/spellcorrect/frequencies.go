@@ -60,7 +60,6 @@ func (o *Frequencies) SaveModel(filename string) error {
 	runtime.GC()
 
 	_, err = w.Write(buff.Bytes())
-	// _, err = w.Write(data)
 	if err != nil {
 		return err
 	}
@@ -81,14 +80,9 @@ func (o *Frequencies) LoadModel(filename string) error {
 	}
 	defer gz.Close()
 
-	var (
-		data Frequencies
-		buff bytes.Buffer
-	)
+	var data Frequencies
 
-	io.Copy(&buff, gz)
-
-	dec := gob.NewDecoder(&buff)
+	dec := gob.NewDecoder(gz)
 	err = dec.Decode(&data)
 	if err != nil {
 		return err
