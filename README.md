@@ -1,7 +1,16 @@
 # speller
 Spelling correction using ngrams and symspell
 
-To work correctly, you need to have config.yaml locally and files from dataset folder
+To work correctly, you need to have config.yaml and two files:
+file freq-dict.txt.gz - gzip text file with content:
+word freq
+example:
+```
+hello 124
+words 222
+```
+
+file sentences.txt.gz - gzip txt file with big text fro traning ngrams model
 
 ```
 	fmt.Println("Example of usage")
