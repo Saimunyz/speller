@@ -76,24 +76,43 @@ func (s *Speller) Train() {
 
 //SpellCorrect - corrects all typos in a given query
 func (s *Speller) SpellCorrect(query string) string {
-	suggestions := s.spellcorrector.SpellCorrect(query)
+	var result string
+
+	// splitting query by 4 words lenght
+	words := strings.Fields(query)
+	if len(words) > 4 {
+		var shortQueries []string
+		for i := 0; i < len(words); i += 4 {
+			stop := i + 4
+			if i+4 >= len(words) {
+				stop = len(words)
+			}
+			shortQuery := strings.Join(words[i:stop], " ")
+			suggestion := s.spellcorrector.SpellCorrect(shortQuery)
+			shortQueries = append(shortQueries, suggestion[0].Tokens...)
+		}
+		result = strings.Join(shortQueries, " ")
+	} else {
+		suggestions := s.spellcorrector.SpellCorrect(query)
+		result = strings.Join(suggestions[0].Tokens, " ")
+	}
 
 	// returns the most likely option
-	return strings.Join(suggestions[0].Tokens, " ")
+	return result
 }
 
 // SpellCorrectAllSuggestions - returns top 10 corrections typos in a given query
-func (s *Speller) SpellCorrectAllSuggestions(query string) []string {
-	suggestions := s.spellcorrector.SpellCorrect(query)
+// func (s *Speller) SpellCorrectAllSuggestions(query string) []string {
+// 	suggestions := s.spellcorrector.SpellCorrect(query)
 
-	topSugges := make([]string, 0, 10)
+// 	topSugges := make([]string, 0, 10)
 
-	for i := 0; i < 10 && i < len(suggestions); i++ {
-		topSugges = append(topSugges, strings.Join(suggestions[i].Tokens, " "))
-	}
+// 	for i := 0; i < 10 && i < len(suggestions); i++ {
+// 		topSugges = append(topSugges, strings.Join(suggestions[i].Tokens, " "))
+// 	}
 
-	return topSugges
-}
+// 	return topSugges
+// }
 
 // SaveModel - saves trained speller model
 func (s *Speller) SaveModel(filename string) error {

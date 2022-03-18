@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -131,7 +130,13 @@ func product(a []string, b []string) []string {
 	items := make([]string, 0, size)
 	for i := range a {
 		for j := range b {
-			items = append(items, a[i]+" "+b[j])
+			newStr := strings.Builder{}
+			newStr.Grow(len(a[i]) + len(b[j]) + 1)
+			newStr.WriteString(a[i])
+			newStr.WriteString(" ")
+			newStr.WriteString(b[j])
+
+			items = append(items, newStr.String())
 		}
 	}
 	return items
@@ -148,27 +153,23 @@ func combos(in [][]string) []string {
 
 // lookupTokens - finds all the suggestions given by the spell library and takes the top 20 of them
 func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
-	allSuggestions := make([][]string, 0, len(tokens))
+	allSuggestions := make([][]string, len(tokens))
+
 	for i := range tokens {
-		allSuggestions = append(allSuggestions, nil) // why so?
 		// dont look at short words
 		if len([]rune(tokens[i])) < 2 {
 			allSuggestions[i] = append(allSuggestions[i], tokens[i])
 		}
 
 		// gets suggestions
-		var sugges []spell.Suggestion
-		suggestions, _ := o.spell.Lookup(tokens[i], spell.SuggestionLevel(5))
-		// takes only with distance of 2 and lower
-		for _, sug := range suggestions {
-			if sug.Distance < 3 {
-				sugges = append(sugges, sug)
+		o.spell.MaxEditDistance = 2
+		suggestions, _ := o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
+		if len(suggestions) == 0 {
+			suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
+			if len(suggestions) == 0 {
+				o.spell.MaxEditDistance = 3
+				suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
 			}
-		}
-
-		// if there is no offer from distance 2 receives from 3
-		if len(sugges) != 0 {
-			suggestions = sugges
 		}
 
 		// if we got a word == token and that word's Freq > 50 returns it
@@ -194,28 +195,77 @@ func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
 	return allSuggestions
 }
 
+// getInsertPosition - returns the position sorted in descending order
+func getInsertPosition(nums []Suggestion, target Suggestion) int {
+	min := 0
+	max := len(nums) - 1
+	for min <= max {
+		mid := min + (max-min)/2
+		// temporarily
+		if nums[mid].score == 0 {
+			nums[mid].score = -1
+		}
+
+		switch {
+		case target.score == nums[mid].score:
+			return mid
+		case target.score > nums[mid].score:
+			max = mid - 1
+		case target.score < nums[mid].score:
+			min = mid + 1
+		}
+	}
+	return min
+}
+
+// insertPosition - insert value at pos, moving all others down
+func insertPosition(suggesses []Suggestion, pos int, sugges Suggestion) {
+	if pos >= len(suggesses) {
+		return
+	}
+	if suggesses[pos].Tokens == nil {
+		suggesses[pos] = sugges
+		return
+	}
+
+	after := suggesses[pos:]
+
+	// insert from the end
+	for i, j := len(suggesses)-1, len(suggesses)-len(suggesses[:pos])-2; i > pos && j >= 0; i-- {
+		suggesses[i] = after[j]
+		j--
+	}
+
+	suggesses[pos] = sugges
+}
+
 // getSuggestionCandidates - returns slice of fixed typos with context N-grams
 func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string) []Suggestion {
 	// combine suggestions
 	suggestionStrings := combos(allSuggestions)
 	seen := make(map[uint64]struct{}, len(suggestionStrings))
-	suggestions := make([]Suggestion, 0, len(suggestionStrings))
+	suggestions := make([]Suggestion, 10)
 	for i := range suggestionStrings {
 		sugTokens := strings.Split(suggestionStrings[i], " ")
 		h := hashTokens(sugTokens)
 		if _, ok := seen[h]; !ok {
 			seen[h] = struct{}{}
-			suggestions = append(suggestions,
-				Suggestion{
-					// Score each word/sentence
-					score:  o.score(sugTokens),
-					Tokens: sugTokens,
-				})
+			sugges := Suggestion{
+				score:  o.score(sugTokens),
+				Tokens: sugTokens,
+			}
+			pos := getInsertPosition(suggestions, sugges)
+			insertPosition(suggestions, pos, sugges)
 		}
 	}
-	sort.SliceStable(suggestions, func(i, j int) bool {
-		return suggestions[i].score > suggestions[j].score
-	})
+
+	for i := range suggestions {
+		if suggestions[i].Tokens == nil {
+			suggestions = suggestions[:i:i]
+			break
+		}
+	}
+
 	return suggestions
 }
 

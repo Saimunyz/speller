@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 
+	_ "net/http/pprof"
+
 	"github.com/Saimunyz/speller"
 )
 
@@ -26,16 +28,10 @@ func main() {
 	// }
 
 	// correct typos
-	correct := speller.SpellCorrect("концелярсикй")
+	correct := speller.SpellCorrect("канканцелярский")
 	fmt.Println(correct)
 
-	correct = speller.SpellCorrect("логитеч клавиатура")
-	fmt.Println(correct)
-
-	correct = speller.SpellCorrect("логитеч клавиатура")
-	fmt.Println(correct)
-
-	correct = speller.SpellCorrect("логитеч клавиатура")
+	correct = speller.SpellCorrect("амоскитная асетка йна впрогулочную акляску")
 	fmt.Println(correct)
 
 	correct = speller.SpellCorrect("логитеч клавиатура")
