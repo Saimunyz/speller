@@ -87,7 +87,7 @@ func (s *Speller) SpellCorrect(query string) string {
 			if i+4 >= len(words) {
 				stop = len(words)
 			}
-			shortQuery := strings.Join(words[i:stop], " ")
+			shortQuery := strings.Join(words[i:stop:stop], " ")
 			suggestion := s.spellcorrector.SpellCorrect(shortQuery)
 			shortQueries = append(shortQueries, suggestion[0].Tokens...)
 		}

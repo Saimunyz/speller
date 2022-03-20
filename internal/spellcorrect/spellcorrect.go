@@ -168,17 +168,20 @@ func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
 			suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
 			if len(suggestions) == 0 {
 				o.spell.MaxEditDistance = 3
-				suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
+				suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
+				if len(suggestions) == 0 {
+					suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
+				}
 			}
 		}
 
 		// if we got a word == token and that word's Freq > 50 returns it
-		for _, sug := range suggestions {
-			if sug.Word == tokens[i] && sug.Frequency >= 50 {
-				allSuggestions[i] = append(allSuggestions[i], tokens[i])
-				break
-			}
-		}
+		// for _, sug := range suggestions {
+		// 	if sug.Word == tokens[i] && sug.Frequency >= 50 {
+		// 		allSuggestions[i] = append(allSuggestions[i], tokens[i])
+		// 		break
+		// 	}
+		// }
 
 		// if no words == token gets 20 first suggestions
 		if len(allSuggestions[i]) == 0 {
@@ -192,6 +195,7 @@ func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
 			allSuggestions[i] = append(allSuggestions[i], tokens[i])
 		}
 	}
+
 	return allSuggestions
 }
 
@@ -256,13 +260,6 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string) []Su
 			}
 			pos := getInsertPosition(suggestions, sugges)
 			insertPosition(suggestions, pos, sugges)
-		}
-	}
-
-	for i := range suggestions {
-		if suggestions[i].Tokens == nil {
-			suggestions = suggestions[:i:i]
-			break
 		}
 	}
 

@@ -2,7 +2,6 @@ package spellcorrect
 
 import (
 	"bufio"
-	"bytes"
 	"compress/gzip"
 	"encoding/gob"
 	"io"
@@ -49,9 +48,7 @@ func (o *Frequencies) SaveModel(filename string) error {
 
 	runtime.GC()
 
-	var buff bytes.Buffer
-
-	enc := gob.NewEncoder(&buff)
+	enc := gob.NewEncoder(w)
 	err = enc.Encode(o)
 	if err != nil {
 		return err
@@ -59,10 +56,6 @@ func (o *Frequencies) SaveModel(filename string) error {
 
 	runtime.GC()
 
-	_, err = w.Write(buff.Bytes())
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -100,6 +93,10 @@ func (o *Frequencies) LoadModel(filename string) error {
 func (o *Frequencies) TrainNgramsOnline(tokens []string) error {
 	var hashes []uint64
 
+	o.Trie.Root.Freq += len(tokens)
+
+	// for _, query := range queries
+
 	for _, token := range tokens {
 		hashes = append(hashes, hashString(token))
 	}
@@ -118,7 +115,28 @@ func (o *Frequencies) TrainNgramsOnline(tokens []string) error {
 		o.UniGramProbs[hashes[i]] = float64(node.Freq) / float64(o.Trie.Root.Freq)
 	}
 
+	for hash := range o.UniGramProbs {
+		node := o.Trie.search([]uint64{hash})
+		o.UniGramProbs[hash] = float64(node.Freq) / float64(o.Trie.Root.Freq)
+		node.Prob = float64(node.Freq) / float64(o.Trie.Root.Freq)
+
+		if node.Children != nil {
+			go o.updateChield(node)
+		}
+	}
+
 	return nil
+}
+
+func (o *Frequencies) updateChield(parent *Node) {
+	for _, child := range parent.Children {
+		if child != nil {
+			child.Prob = float64(child.Freq) / float64(parent.Freq)
+			if child.Children != nil {
+				go o.updateChield(child)
+			}
+		}
+	}
 }
 
 // TrainNgrams - traning ngrams model from big corpus
@@ -279,7 +297,7 @@ func hashString(s string) uint64 {
 func TokenNgrams(words []string, size int) [][]string {
 	var out [][]string
 	for i := 0; i+size <= len(words); i++ {
-		out = append(out, words[i:i+size])
+		out = append(out, words[i:i+size:i+size])
 	}
 	return out
 }
@@ -290,7 +308,7 @@ func ngrams(words []uint64, size int) <-chan ngram {
 	go func() {
 		defer close(out)
 		for i := 0; i+size <= len(words); i++ {
-			out <- words[i : i+size]
+			out <- words[i : i+size : i+size]
 		}
 	}()
 	return out

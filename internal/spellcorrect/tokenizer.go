@@ -29,7 +29,6 @@ func (o *SimpleTokenizer) Tokens(in io.Reader) ([]string, error) {
 		})
 		ans = append(ans, strings.ToLower(s))
 	}
-
 	err := scanner.Err()
 
 	return ans, err

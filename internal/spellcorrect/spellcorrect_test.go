@@ -158,5 +158,4 @@ func TestGetSuggestionCandidates(t *testing.T) {
 			return
 		}
 	}
-
 }
