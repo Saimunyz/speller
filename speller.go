@@ -19,8 +19,8 @@ type Speller struct {
 }
 
 // NewSpeller - creates new speller instance
-func NewSpeller() *Speller {
-	cfg, err := config.ReadConfigYML("config.yaml")
+func NewSpeller(configPapth string) *Speller {
+	cfg, err := config.ReadConfigYML(configPapth)
 	if err != nil {
 		log.Fatal(err)
 	}

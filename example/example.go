@@ -11,7 +11,7 @@ import (
 func main() {
 	fmt.Println("Example of usage")
 	// create speller
-	speller := speller.NewSpeller()
+	speller := speller.NewSpeller("config.yaml")
 
 	// load model
 	err := speller.LoadModel("models/bin-not-normalized-data.gz")
