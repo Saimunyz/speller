@@ -17,12 +17,14 @@ func getSpellCorrector() *SpellCorrector {
 	tokenizer := NewSimpleTokenizer()
 	freq := NewFrequencies(0, 0)
 	bagOfWords := bagOfWords.NewBagOfWords(
-		ctx,
 		time.Second,
 		time.Second,
 		5,
-		false,
+		cancel,
 	)
+	bagOfWords.Start(ctx)
+	bagOfWords.Stop()
+
 	sc := NewSpellCorrector(tokenizer, freq, []float64{100, 15, 5}, bagOfWords, cancel)
 	return sc
 }
