@@ -1,17 +1,29 @@
 package spellcorrect
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/Saimunyz/speller/internal/bagOfWords"
 	"github.com/eskriett/spell"
 )
 
 func getSpellCorrector() *SpellCorrector {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	tokenizer := NewSimpleTokenizer()
 	freq := NewFrequencies(0, 0)
-	sc := NewSpellCorrector(tokenizer, freq, []float64{100, 15, 5}, false)
+	bagOfWords := bagOfWords.NewBagOfWords(
+		ctx,
+		time.Second,
+		time.Second,
+		5,
+		false,
+	)
+	sc := NewSpellCorrector(tokenizer, freq, []float64{100, 15, 5}, bagOfWords, cancel)
 	return sc
 }
 
@@ -131,12 +143,12 @@ func TestGetSuggestionCandidates(t *testing.T) {
 
 	expected := [][]string{
 
-		{"1", "2", "3"},
-		{"a", "2", "3"},
-		{"aa", "2", "3"},
-		{"1", "b", "3"},
-		{"a", "b", "3"},
 		{"aa", "b", "3"},
+		{"aa", "2", "3"},
+		{"a", "b", "3"},
+		{"a", "2", "3"},
+		{"1", "b", "3"},
+		{"1", "2", "3"},
 	}
 
 	sc := getSpellCorrector()

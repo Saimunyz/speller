@@ -6,4 +6,7 @@ speller_config:
   unigram_weight: 100
   bigram_weight: 50
   trigram_weight: 80
-  auto_train_mode: false
+  auto_train_mode: true
+  freq_threshold: 50
+  sending_time: 1
+  cleaning_time: 2

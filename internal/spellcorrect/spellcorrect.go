@@ -2,14 +2,17 @@ package spellcorrect
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"log"
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
+	"github.com/Saimunyz/speller/internal/bagOfWords"
 	"github.com/eskriett/spell"
 	"github.com/segmentio/fasthash/fnv1a"
 )
@@ -25,7 +28,7 @@ type FrequencyContainer interface {
 	Get(tokens []string) float64
 	LoadModel(filename string) error
 	SaveModel(filename string) error
-	TrainNgramsOnline(tokens []string) error
+	TrainNgramsOnline(tokens [][]string) error
 }
 
 // Tokinizer - tokenizer function from token layer
@@ -34,21 +37,24 @@ type Tokenizer interface {
 }
 
 type SpellCorrector struct {
+	mu            sync.Mutex
 	tokenizer     Tokenizer
 	frequencies   FrequencyContainer
 	spell         *spell.Spell
 	weights       []float64
-	autoTrainMode bool
+	bagOfOWrds    *bagOfWords.BagOfWords
+	stopAutoTrain context.CancelFunc
 }
 
 // NewSpellCorrector - creates new SpellCorrector instance
-func NewSpellCorrector(tokenizer Tokenizer, frequencies FrequencyContainer, weights []float64, autoTrainMode bool) *SpellCorrector {
+func NewSpellCorrector(tokenizer Tokenizer, frequencies FrequencyContainer, weights []float64, bagOfWords *bagOfWords.BagOfWords, cancel context.CancelFunc) *SpellCorrector {
 	ans := SpellCorrector{
 		tokenizer:     tokenizer,
 		frequencies:   frequencies,
 		spell:         spell.New(),
 		weights:       weights,
-		autoTrainMode: autoTrainMode,
+		bagOfOWrds:    bagOfWords,
+		stopAutoTrain: cancel,
 	}
 	ans.spell.MaxEditDistance = 3
 	return &ans
@@ -162,6 +168,7 @@ func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
 		}
 
 		// gets suggestions
+		o.mu.Lock()
 		o.spell.MaxEditDistance = 2
 		suggestions, _ := o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
 		if len(suggestions) == 0 {
@@ -174,6 +181,7 @@ func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
 				}
 			}
 		}
+		o.mu.Unlock()
 
 		// if we got a word == token and that word's Freq > 50 returns it
 		// for _, sug := range suggestions {
@@ -263,38 +271,49 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string) []Su
 		}
 	}
 
+	for i, item := range suggestions {
+		if item.Tokens == nil {
+			suggestions = suggestions[:i:i]
+			break
+		}
+	}
+
 	return suggestions
 }
 
-func (o *SpellCorrector) addWordToModel(newWords chan string) {
-	for query := range newWords {
-		var tokens []string
+func (o *SpellCorrector) StartAutoTrain() {
+	for queries := range o.bagOfOWrds.OutQueries {
+		tokens := make([][]string, len(queries))
 
-		words := strings.Fields(query)
-		for _, word := range words {
-			if len([]rune(word)) < 2 {
-				continue
-			}
-			word = strings.TrimRightFunc(word, func(r rune) bool {
-				return !unicode.IsLetter(r) && !unicode.IsNumber(r)
-			})
-			word = strings.ToLower(word)
-			tokens = append(tokens, word)
-
-			// update spell library
-			entry, err := o.spell.GetEntry(word)
-			if err != nil || entry == nil {
-				// add new entry
-				o.spell.AddEntry(spell.Entry{
-					Frequency: 1,
-					Word:      word,
+		for i, query := range queries {
+			words := strings.Fields(query)
+			for _, word := range words {
+				if len([]rune(word)) < 2 {
+					continue
+				}
+				word = strings.TrimRightFunc(word, func(r rune) bool {
+					return !unicode.IsLetter(r) && !unicode.IsNumber(r)
 				})
-				continue
+				word = strings.ToLower(word)
+				tokens[i] = append(tokens[i], word)
+
+				o.mu.Lock()
+				// update spell library
+				entry, err := o.spell.GetEntry(word)
+				if err != nil || entry == nil {
+					// add new entry
+					o.spell.AddEntry(spell.Entry{
+						Frequency: 1,
+						Word:      word,
+					})
+					continue
+				}
+				o.spell.AddEntry(spell.Entry{
+					Frequency: entry.Frequency + 1,
+					Word:      entry.Word,
+				})
+				o.mu.Unlock()
 			}
-			o.spell.AddEntry(spell.Entry{
-				Frequency: entry.Frequency + 1,
-				Word:      entry.Word,
-			})
 		}
 		o.frequencies.TrainNgramsOnline(tokens)
 	}
@@ -303,23 +322,11 @@ func (o *SpellCorrector) addWordToModel(newWords chan string) {
 // SpellCorrect - returns suggestions
 func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
 	// new words for model improvments
-	newWords := make(chan string)
-	if o.autoTrainMode {
-		go o.addWordToModel(newWords)
-	}
+	o.bagOfOWrds.Add(s)
 
 	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
 	allSuggestions := o.lookupTokens(tokens)
 	items := o.getSuggestionCandidates(allSuggestions)
-
-	// sending data to model improvments
-	if o.autoTrainMode {
-		go func() {
-			sugges := strings.Join(items[0].Tokens, " ")
-			newWords <- sugges
-			newWords <- s
-		}()
-	}
 
 	return items
 }

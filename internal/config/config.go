@@ -19,6 +19,9 @@ type SpellerConfig struct {
 	BigramWeight  float64 `yaml:"bigram_weight"`
 	TrigramWeight float64 `yaml:"trigram_weight"`
 	AutoTrainMode bool    `yaml:"auto_train_mode"`
+	FreqThreshold int     `yaml:"freq_threshold"`
+	SendingTime   int     `yaml:"sending_time"`
+	CleaningTime  int     `yaml:"cleaning_time"`
 }
 
 // Config - contains all configuration parameters in config package
@@ -51,6 +54,18 @@ func (o *Config) Validate() error {
 	if o.SpellerConfig.TrigramWeight == 0 {
 		return fmt.Errorf("you need to set non zero 'trigram_weight'")
 	}
+	if o.SpellerConfig.AutoTrainMode {
+		if o.SpellerConfig.FreqThreshold == 0 {
+			return fmt.Errorf("you need to set non zero 'freq_threshold'")
+		}
+		if o.SpellerConfig.SendingTime == 0 {
+			return fmt.Errorf("you need to set non zero 'sending_time'")
+		}
+		if o.SpellerConfig.CleaningTime == 0 {
+			return fmt.Errorf("you need to set non zero 'cleaning_time'")
+		}
+	}
+
 	return nil
 }
 

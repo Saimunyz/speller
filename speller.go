@@ -2,6 +2,7 @@ package speller
 
 import (
 	"compress/gzip"
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Saimunyz/speller/internal/bagOfWords"
 	"github.com/Saimunyz/speller/internal/config"
 	"github.com/Saimunyz/speller/internal/spellcorrect"
 )
@@ -16,11 +18,12 @@ import (
 type Speller struct {
 	spellcorrector *spellcorrect.SpellCorrector
 	cfg            *config.Config
+	ready          chan struct{}
 }
 
 // NewSpeller - creates new speller instance
 func NewSpeller() *Speller {
-	cfg, err := config.ReadConfigYML("config.yaml")
+	cfg, err := config.ReadConfigYML("../config.yaml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,13 +31,32 @@ func NewSpeller() *Speller {
 	tokenizerWords := spellcorrect.NewSimpleTokenizer()
 	freq := spellcorrect.NewFrequencies(cfg.SpellerConfig.MinWordLength, cfg.SpellerConfig.MinWordFreq)
 
+	ctx, cancel := context.WithCancel(context.Background())
+
+	bagOfWords := bagOfWords.NewBagOfWords(
+		time.Minute*time.Duration(cfg.SpellerConfig.CleaningTime),
+		time.Second,
+		cfg.SpellerConfig.FreqThreshold,
+		cancel,
+	)
+
 	weights := []float64{cfg.SpellerConfig.UnigramWeight, cfg.SpellerConfig.BigramWeight, cfg.SpellerConfig.TrigramWeight}
-	sc := spellcorrect.NewSpellCorrector(tokenizerWords, freq, weights, cfg.SpellerConfig.AutoTrainMode)
+	sc := spellcorrect.NewSpellCorrector(tokenizerWords, freq, weights, bagOfWords, cancel)
 
 	spller := &Speller{
 		spellcorrector: sc,
 		cfg:            cfg,
+		ready:          make(chan struct{}),
 	}
+
+	if cfg.SpellerConfig.AutoTrainMode {
+		go func() {
+			<-spller.ready
+			bagOfWords.Start(ctx)
+			sc.StartAutoTrain()
+		}()
+	}
+
 	return spller
 }
 
@@ -72,6 +94,9 @@ func (s *Speller) Train() {
 
 	//free memory
 	runtime.GC()
+
+	// ready signal
+	// s.ready <- struct{}{}
 }
 
 //SpellCorrect - corrects all typos in a given query
@@ -135,7 +160,7 @@ func (s *Speller) LoadModel(filename string) error {
 		return err
 	}
 
-	file2, err := os.Open(s.cfg.SpellerConfig.DictPath)
+	file2, err := os.Open("../" + s.cfg.SpellerConfig.DictPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -152,6 +177,9 @@ func (s *Speller) LoadModel(filename string) error {
 		return err
 	}
 	fmt.Printf("Model loaded[%v]: %s\n", time.Since(t), filename)
+
+	// ready signal
+	s.ready <- struct{}{}
 
 	return nil
 }

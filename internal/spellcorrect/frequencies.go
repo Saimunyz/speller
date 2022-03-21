@@ -9,6 +9,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -18,19 +19,17 @@ import (
 type ngram []uint64
 
 type Frequencies struct {
-	MinWord      int
-	MinFreq      int
-	UniGramProbs map[uint64]float64
-	Trie         *WordTrie
+	MinWord int
+	MinFreq int
+	Trie    *WordTrie
 }
 
 // NewFrequencis - creates new Frequencies instance
 func NewFrequencies(minWord, minFreq int) *Frequencies {
 	ans := Frequencies{
-		MinWord:      minWord,
-		MinFreq:      minFreq,
-		UniGramProbs: make(map[uint64]float64),
-		Trie:         newWordTrie(0),
+		MinWord: minWord,
+		MinFreq: minFreq,
+		Trie:    newWordTrie(0),
 	}
 	return &ans
 }
@@ -84,56 +83,69 @@ func (o *Frequencies) LoadModel(filename string) error {
 	o.MinFreq = data.MinFreq
 	o.MinWord = data.MinWord
 	o.Trie = data.Trie
-	o.UniGramProbs = data.UniGramProbs
 
 	return nil
 }
 
 // TrainNgramsOnline - attempt to make real-time traning
-func (o *Frequencies) TrainNgramsOnline(tokens []string) error {
+func (o *Frequencies) TrainNgramsOnline(queries [][]string) error {
 	var hashes []uint64
+	wg := sync.WaitGroup{}
 
-	o.Trie.Root.Freq += len(tokens)
+	var totalWords int
 
-	// for _, query := range queries
-
-	for _, token := range tokens {
-		hashes = append(hashes, hashString(token))
+	for _, tokens := range queries {
+		totalWords += len(tokens)
 	}
 
-	for i := 1; i < 4; i++ {
-		grams := ngrams(hashes, i)
-		for _ngram := range grams {
-			o.Trie.put(_ngram)
+	o.Trie.Root.Freq += totalWords
+
+	for _, tokens := range queries {
+		for _, token := range tokens {
+			hashes = append(hashes, hashString(token))
 		}
+
+		for i := 1; i < 4; i++ {
+			grams := ngrams(hashes, i)
+			for _ngram := range grams {
+				o.Trie.put(_ngram)
+			}
+		}
+
+		// update unigrams probs
+		for i := range hashes {
+			// need to update root.Freq and whole trie after this?
+			node := o.Trie.search([]uint64{hashes[i]})
+
+			if len(node.Children) != 0 {
+				wg.Add(1)
+				go o.updateChild(node, &wg)
+			}
+		}
+
 	}
 
-	// update unigrams probs
-	for i := range hashes {
-		// need to update root.Freq and whole trie after this?
-		node := o.Trie.search([]uint64{hashes[i]})
-		o.UniGramProbs[hashes[i]] = float64(node.Freq) / float64(o.Trie.Root.Freq)
-	}
+	wg.Wait()
 
-	for hash := range o.UniGramProbs {
-		node := o.Trie.search([]uint64{hash})
-		o.UniGramProbs[hash] = float64(node.Freq) / float64(o.Trie.Root.Freq)
-		node.Prob = float64(node.Freq) / float64(o.Trie.Root.Freq)
-
-		if node.Children != nil {
-			go o.updateChield(node)
+	// updates all unigrams prob
+	for _, node := range o.Trie.Root.Children {
+		if node != nil {
+			node.Prob = float64(node.Freq) / float64(o.Trie.Root.Freq)
 		}
 	}
 
 	return nil
 }
 
-func (o *Frequencies) updateChield(parent *Node) {
+func (o *Frequencies) updateChild(parent *Node, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	for _, child := range parent.Children {
 		if child != nil {
 			child.Prob = float64(child.Freq) / float64(parent.Freq)
-			if child.Children != nil {
-				go o.updateChield(child)
+			if len(child.Children) != 0 {
+				wg.Add(1)
+				go o.updateChild(child, wg)
 			}
 		}
 	}
@@ -141,10 +153,6 @@ func (o *Frequencies) updateChield(parent *Node) {
 
 // TrainNgrams - traning ngrams model from big corpus
 func (o *Frequencies) TrainNgrams(in io.Reader) error {
-	if len(o.UniGramProbs) != 0 {
-		return nil
-	}
-
 	var hashes []uint64
 
 	unigrams := make(map[uint64]int)
@@ -187,8 +195,6 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 	for k, v := range unigrams {
 		if v < o.MinFreq {
 			bl[k] = true
-		} else {
-			o.UniGramProbs[k] = float64(v) / float64(len(hashes))
 		}
 	}
 
@@ -218,9 +224,6 @@ func (o *Frequencies) Get(tokens []string) float64 {
 	hashes := make([]uint64, len(tokens))
 	for i := range tokens {
 		hashes[i] = hashString(tokens[i])
-	}
-	if len(hashes) == 1 {
-		return o.UniGramProbs[hashes[0]]
 	}
 	node := o.Trie.search(hashes)
 	if node == nil {
