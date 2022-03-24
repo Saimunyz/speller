@@ -40,7 +40,7 @@ func NewSpeller(configPapth string) *Speller {
 
 // Train - train from zero n-grams model with specified in cfg datasets
 func (s *Speller) Train() {
-	file, err := os.Open(s.cfg.SpellerConfig.SentencesPath)
+	file, err := os.Open("../" + s.cfg.SpellerConfig.SentencesPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func (s *Speller) Train() {
 	}
 	defer gz.Close()
 
-	file2, err := os.Open(s.cfg.SpellerConfig.DictPath)
+	file2, err := os.Open("../" + s.cfg.SpellerConfig.DictPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,6 +76,10 @@ func (s *Speller) Train() {
 
 //SpellCorrect - corrects all typos in a given query
 func (s *Speller) SpellCorrect(query string) string {
+	if len(query) < 1 {
+		return query
+	}
+
 	var result string
 
 	// splitting query by 4 words lenght
@@ -135,7 +139,7 @@ func (s *Speller) LoadModel(filename string) error {
 		return err
 	}
 
-	file2, err := os.Open(s.cfg.SpellerConfig.DictPath)
+	file2, err := os.Open("../" + s.cfg.SpellerConfig.DictPath)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -162,10 +162,15 @@ func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
 		}
 
 		// gets suggestions
+		var suggestions spell.SuggestionList
 		o.spell.MaxEditDistance = 2
-		suggestions, _ := o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
-		if len(suggestions) == 0 {
+
+		if len([]rune(tokens[i])) < 5 {
+			suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
+		} else {
 			suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
+			// if len(suggestions) == 0 {
+			// suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
 			if len(suggestions) == 0 {
 				o.spell.MaxEditDistance = 3
 				suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
@@ -173,6 +178,12 @@ func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
 					suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
 				}
 			}
+		}
+		// }
+
+		// if word in dict then not changing it
+		if len(suggestions) > 0 && suggestions[0].Distance == int(spell.LevelBest) {
+			allSuggestions[i] = append(allSuggestions[i], suggestions[0].Word)
 		}
 
 		// // if we got a word == token and that word's Freq > 50 returns it
