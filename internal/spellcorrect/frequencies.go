@@ -278,14 +278,17 @@ func (o *WordTrie) put(key ngram) {
 // search - looking for ngrams in trie
 func (o *WordTrie) search(key ngram) *Node {
 	tmp := o.Root
+	res := &Node{Prob: 1}
 	for i := 0; i < len(key); i++ {
 		if next, ok := tmp.Children[key[i]]; ok {
 			tmp = next
+			res.Prob *= tmp.Prob
 		} else {
-			return nil
+			res.Prob /= float64(o.Root.Freq)
+			return res
 		}
 	}
-	return tmp
+	return res
 }
 
 // hashString - hashes string

@@ -182,9 +182,9 @@ func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
 		// }
 
 		// if word in dict then not changing it
-		if len(suggestions) > 0 && suggestions[0].Distance == int(spell.LevelBest) {
-			allSuggestions[i] = append(allSuggestions[i], suggestions[0].Word)
-		}
+		// if len(suggestions) > 0 && suggestions[0].Distance == int(spell.LevelBest) {
+		// 	allSuggestions[i] = append(allSuggestions[i], suggestions[0].Word)
+		// }
 
 		// // if we got a word == token and that word's Freq > 50 returns it
 		// for _, sug := range suggestions {
@@ -337,14 +337,30 @@ func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
 
 // scpre - scoring each sentence
 func (o *SpellCorrector) score(tokens []string) float64 {
-	score := 0.0
-	for i := 1; i < 4; i++ {
-		grams := TokenNgrams(tokens, i)
-		sum1 := 0.
-		for i := range grams {
-			sum1 += o.frequencies.Get(grams[i])
+	// score := 0.0
+	// for i := 1; i < 4; i++ {
+	// 	// grams := TokenNgrams(tokens, i)
+	// 	// sum1 := 0.
+	// 	// for i := range grams {
+	// 	// 	sum1 += o.frequencies.Get(grams[i])
+	// 	// }
+	// 	// score += o.weights[i-1] * sum1
+	// }
+
+	grams := TokenNgrams(tokens, 3)
+	if len(grams) == 0 {
+		grams = TokenNgrams(tokens, 2)
+		if len(grams) == 0 {
+			grams = TokenNgrams(tokens, 1)
 		}
-		score += o.weights[i-1] * sum1
 	}
-	return score
+
+	prob := 1.
+	for i := range grams {
+		prob *= o.frequencies.Get(grams[i])
+	}
+
+	return prob
+
+	// return score
 }
