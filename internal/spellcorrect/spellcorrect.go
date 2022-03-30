@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"log"
+	"math"
 	"runtime"
 	"strconv"
 	"strings"
@@ -26,6 +27,7 @@ type FrequencyContainer interface {
 	LoadModel(filename string) error
 	SaveModel(filename string) error
 	TrainNgramsOnline(tokens []string) error
+	GetSentenceScore(tokens []string) float64
 }
 
 // Tokinizer - tokenizer function from token layer
@@ -152,13 +154,15 @@ func combos(in [][]string) []string {
 }
 
 // lookupTokens - finds all the suggestions given by the spell library and takes the top 20 of them
-func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
+func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]int) {
 	allSuggestions := make([][]string, len(tokens))
+	dist := make(map[string]int)
 
 	for i := range tokens {
 		// dont look at short words
 		if len([]rune(tokens[i])) < 2 {
 			allSuggestions[i] = append(allSuggestions[i], tokens[i])
+			dist[tokens[i]] = 0
 		}
 
 		// gets suggestions
@@ -198,16 +202,18 @@ func (o *SpellCorrector) lookupTokens(tokens []string) [][]string {
 		if len(allSuggestions[i]) == 0 {
 			for j := 0; j < len(suggestions) && j < 20; j++ {
 				allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
+				dist[suggestions[j].Word] = suggestions[j].Distance
 			}
 		}
 
 		// if no suggestions returns token
 		if len(allSuggestions[i]) == 0 {
 			allSuggestions[i] = append(allSuggestions[i], tokens[i])
+			dist[tokens[i]] = 0
 		}
 	}
 
-	return allSuggestions
+	return allSuggestions, dist
 }
 
 // getInsertPosition - returns the position sorted in descending order
@@ -255,7 +261,7 @@ func insertPosition(suggesses []Suggestion, pos int, sugges Suggestion) {
 }
 
 // getSuggestionCandidates - returns slice of fixed typos with context N-grams
-func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string) []Suggestion {
+func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string, dist map[string]int) []Suggestion {
 	// combine suggestions
 	suggestionStrings := combos(allSuggestions)
 	seen := make(map[uint64]struct{}, len(suggestionStrings))
@@ -266,7 +272,7 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string) []Su
 		if _, ok := seen[h]; !ok {
 			seen[h] = struct{}{}
 			sugges := Suggestion{
-				score:  o.score(sugTokens),
+				score:  o.score(sugTokens, dist),
 				Tokens: sugTokens,
 			}
 			pos := getInsertPosition(suggestions, sugges)
@@ -320,8 +326,8 @@ func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
 	}
 
 	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
-	allSuggestions := o.lookupTokens(tokens)
-	items := o.getSuggestionCandidates(allSuggestions)
+	allSuggestions, dist := o.lookupTokens(tokens)
+	items := o.getSuggestionCandidates(allSuggestions, dist)
 
 	// sending data to model improvments
 	if o.autoTrainMode {
@@ -335,32 +341,212 @@ func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
 	return items
 }
 
-// scpre - scoring each sentence
-func (o *SpellCorrector) score(tokens []string) float64 {
-	// score := 0.0
-	// for i := 1; i < 4; i++ {
-	// 	// grams := TokenNgrams(tokens, i)
-	// 	// sum1 := 0.
-	// 	// for i := range grams {
-	// 	// 	sum1 += o.frequencies.Get(grams[i])
-	// 	// }
-	// 	// score += o.weights[i-1] * sum1
-	// }
+func getPenalty(prob float64, dist int) float64 {
+	var alpha int
 
-	grams := TokenNgrams(tokens, 3)
-	if len(grams) == 0 {
-		grams = TokenNgrams(tokens, 2)
-		if len(grams) == 0 {
-			grams = TokenNgrams(tokens, 1)
+	if dist == 0 {
+		return 0
+	}
+
+	switch dist {
+	case 1:
+		alpha = 51
+	case 2:
+		alpha = 55
+	case 3:
+		alpha = 60
+	}
+	prob = prob * float64(alpha) / float64(100)
+	return prob
+}
+
+func (o *SpellCorrector) GetUnigram(tokens []string, dist int) float64 {
+	unigrams := TokenNgrams(tokens, 1)
+
+	prob := o.frequencies.Get(unigrams[0])
+	prob -= getPenalty(prob, dist)
+
+	return prob
+}
+
+func (o *SpellCorrector) GetBigram(tokens []string) float64 {
+	bigrams := TokenNgrams(tokens, 2)
+
+	prob := o.frequencies.Get(bigrams[0])
+
+	return prob
+}
+
+func (o *SpellCorrector) Gettrigram(tokens []string) float64 {
+	trigrams := TokenNgrams(tokens, 3)
+
+	prob := o.frequencies.Get(trigrams[0])
+
+	return prob
+}
+
+func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]int) float64 {
+	var (
+		uniLog float64
+		biLog  float64
+		score  float64
+	)
+
+	// bigram := o.GetBigram(ngrams)
+	bigrams := TokenNgrams(ngrams, 2)
+
+	penalty := len(bigrams)
+	for i := range bigrams {
+		bigram := o.GetBigram(bigrams[i])
+		if bigram != 0 {
+			biLog = math.Log(bigram)
+			penalty--
+
+			unigram := o.GetUnigram(bigrams[i], dist[bigrams[i][0]])
+			if unigram != 0 {
+				uniLog = math.Log(unigram)
+			}
+			score += uniLog + biLog
+		} else {
+			tmp := o.calculateUnigramScore(bigrams[i], dist)
+			score += tmp
 		}
 	}
 
-	prob := 1.
-	for i := range grams {
-		prob *= o.frequencies.Get(grams[i])
+	if penalty > 0 {
+		score = o.applyPenalty(score, penalty)
 	}
 
-	return prob
+	return score
+}
 
-	// return score
+func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]int) float64 {
+	var (
+		uniLog float64
+		score  float64
+	)
+
+	unigrams := TokenNgrams(ngrams, 1)
+
+	penalty := len(unigrams)
+
+	for i := range unigrams {
+		unigram := o.GetUnigram(unigrams[i], dist[unigrams[i][0]])
+		if unigram != 0 {
+			penalty--
+			uniLog = math.Log(unigram)
+		}
+
+		score += uniLog
+	}
+
+	if penalty > 0 {
+		score = o.applyPenalty(score, penalty)
+	}
+
+	return score
+}
+
+func (o *SpellCorrector) applyPenalty(score float64, penalty int) float64 {
+	newScore := score
+	for i := 0; i < penalty; i++ {
+		newScore += score
+	}
+	return newScore
+}
+
+// scpre - scoring each sentence
+func (o *SpellCorrector) score(tokens []string, dist map[string]int) float64 {
+	// score := 0.0
+	// for i := 1; i < 4; i++ {
+	// 	grams := TokenNgrams(tokens, i)
+	// 	sum1 := 0.
+	// 	for i := range grams {
+	// 		sum1 += o.frequencies.Get(grams[i])
+	// 	}
+	// 	score += o.weights[i-1] * sum1
+	// }
+
+	ngrams := TokenNgrams(tokens, 3)
+	if len(ngrams) == 0 {
+		ngrams = TokenNgrams(tokens, 2)
+		if len(ngrams) == 0 {
+			ngrams = TokenNgrams(tokens, 1)
+		}
+	}
+
+	var score float64
+
+	// if len(tokens) > 2 {
+	// 	if tokens[0] == "ранец" && tokens[1] == "для" && tokens[2] == "начальных" && tokens[3] == "" {
+	// 		fmt.Println(score)
+	// 	}
+	// 	if tokens[0] == "палец" && tokens[1] == "для" && tokens[2] == "начальных" && tokens[3] == "классов" {
+	// 		fmt.Println(score)
+	// 	}
+	// }
+
+	for i := range ngrams {
+		switch len(ngrams[i]) {
+		case 1:
+			var uniLog float64
+
+			unigram := o.GetUnigram(ngrams[i], dist[ngrams[i][0]])
+			if unigram != 0 {
+				uniLog = math.Log(unigram)
+			}
+
+			score += uniLog
+		case 2:
+			var (
+				uniLog float64
+				biLog  float64
+			)
+
+			bigram := o.GetBigram(ngrams[i])
+			if bigram != 0 {
+				biLog = math.Log(bigram)
+
+				unigram := o.GetUnigram(ngrams[i], dist[ngrams[i][0]])
+				if unigram != 0 {
+					uniLog = math.Log(unigram)
+				}
+
+				score += uniLog + biLog
+			} else {
+				ngram := o.calculateUnigramScore(ngrams[i], dist)
+				score += ngram
+			}
+
+		case 3:
+			var (
+				uniLog float64
+				biLog  float64
+				triLog float64
+			)
+
+			trigram := o.Gettrigram(ngrams[i])
+			if trigram != 0 {
+				triLog = math.Log(trigram)
+
+				bigram := o.GetBigram(ngrams[i])
+				if bigram != 0 {
+					biLog = math.Log(bigram)
+				}
+				unigram := o.GetUnigram(ngrams[i], dist[ngrams[i][0]])
+				if unigram != 0 {
+					uniLog = math.Log(unigram)
+				}
+
+				score += uniLog + biLog + triLog
+			} else {
+				ngram := o.calculateBigramScore(ngrams[i], dist)
+				score += ngram
+			}
+		}
+	}
+	if score != 0 {
+		score = math.Exp(score)
+	}
+	return score
 }

@@ -3,7 +3,7 @@ speller_config:
   dict_path: datasets/ru/freq-dict.txt.gz
   min_word_freq: 1
   min_word_length: 2
-  unigram_weight: 80
-  bigram_weight: 100
-  trigram_weight: 80
+  unigram_weight: 3
+  bigram_weight: 5
+  trigram_weight: 2
   auto_train_mode: false
