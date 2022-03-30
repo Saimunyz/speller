@@ -27,7 +27,6 @@ type FrequencyContainer interface {
 	LoadModel(filename string) error
 	SaveModel(filename string) error
 	TrainNgramsOnline(tokens []string) error
-	GetSentenceScore(tokens []string) float64
 }
 
 // Tokinizer - tokenizer function from token layer
