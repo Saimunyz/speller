@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"encoding/gob"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -164,7 +165,7 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 				return !unicode.IsLetter(r) && !unicode.IsNumber(r)
 			})
 			word := strings.ToLower(s)
-	
+			lineHashes = append(lineHashes, hashString(word))
 			unigrams[lineHashes[len(lineHashes)-1]]++
 			if len([]rune(word)) < o.MinWord {
 				bl[lineHashes[len(lineHashes)-1]] = true
@@ -186,8 +187,12 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 	if err != nil {
 		return err
 	}
-
-	o.Trie = newWordTrie(len(hashes))
+	var countWords int
+	for _, v := range hashes {
+		countWords += len(v)
+	}
+	fmt.Println(countWords)
+	o.Trie = newWordTrie(countWords)
 
 	// counting unigrams probs
 	for k, v := range unigrams {

@@ -11,22 +11,22 @@ import (
 func main() {
 	fmt.Println("Example of usage")
 	// create speller
-	speller := speller.NewSpeller("config.yaml")
+	speller := speller.NewSpeller("../config.yaml")
 
 	// load modelы
-	err := speller.LoadModel("models/sentences.txt.gz")
-	if err != nil {
-		fmt.Printf("No such file: %v\n", err)
-		//panic(err)
-	}
-
-	// or train model and save
-	// speller.Train()
-	// err := speller.SaveModel("models/sentences.txt.gz")
+	// err := speller.LoadModel("models/sentences.txt.gz")
 	// if err != nil {
 	// 	fmt.Printf("No such file: %v\n", err)
 	// 	//panic(err)
 	// }
+
+	// or train model and save
+	speller.Train()
+	err := speller.SaveModel("models/sentences.txt.gz")
+	if err != nil {
+		fmt.Printf("No such file: %v\n", err)
+		//panic(err)
+	}
 
 	// correct typos
 	correct := speller.SpellCorrect("канканцелярский")
