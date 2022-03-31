@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"encoding/gob"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/Saimunyz/speller/internal/tokenizer/normalize"
 	"github.com/segmentio/fasthash/fnv1a"
 )
 
@@ -145,6 +147,14 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 		return nil
 	}
 
+	tokenizer := normalize.NewNormalizer()
+	t2 := time.Now().UTC()
+	err2 := tokenizer.LoadDictionariesLocal("../data/words.csv.gz", "../data/spellcheck1.csv")
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+	log.Println(time.Now().Sub(t2))
+
 	var hashes []uint64
 
 	unigrams := make(map[uint64]int)
@@ -160,7 +170,9 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 			return !unicode.IsLetter(r) && !unicode.IsNumber(r)
 		})
 		word := strings.ToLower(s)
-		hashes = append(hashes, hashString(word))
+		wordTokenized := tokenizer.NormalizeWithoutMeta(word)[0][0].Lemma
+		fmt.Println(wordTokenized)
+		hashes = append(hashes, hashString(wordTokenized))
 
 		unigrams[hashes[len(hashes)-1]]++
 		if len([]rune(word)) < o.MinWord {

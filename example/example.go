@@ -11,7 +11,7 @@ import (
 func main() {
 	fmt.Println("Example of usage")
 	// create speller
-	speller := speller.NewSpeller("config.yaml")
+	speller := speller.NewSpeller("../config.yaml")
 
 	// load modelы
 	err := speller.LoadModel("models/sentences.txt.gz")
@@ -24,7 +24,8 @@ func main() {
 	// speller.Train()
 	// err := speller.SaveModel("models/sentences.txt.gz")
 	// if err != nil {
-	// 	panic(err)
+	// 	fmt.Printf("No such file: %v\n", err)
+	// 	//panic(err)
 	// }
 
 	// correct typos

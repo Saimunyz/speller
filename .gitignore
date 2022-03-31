@@ -13,6 +13,7 @@
 .vscode
 datasets/*
 models/*
+data*
 
 heap-after.pprof
 heap-before.pprof
