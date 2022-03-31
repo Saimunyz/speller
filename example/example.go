@@ -11,7 +11,7 @@ import (
 func main() {
 	fmt.Println("Example of usage")
 	// create speller
-	speller := speller.NewSpeller("../config.yaml")
+	speller := speller.NewSpeller("config.yaml")
 
 	// load modelы
 	err := speller.LoadModel("models/sentences.txt.gz")
