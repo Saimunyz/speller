@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"encoding/gob"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -145,7 +146,8 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 		return nil
 	}
 
-	var hashes []uint64
+	// var hashes []uint64
+	var hashes [][]uint64
 
 	unigrams := make(map[uint64]int)
 	bl := make(map[uint64]bool)
@@ -153,19 +155,24 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 	// reads from file and counting freq of unigrams
 	t := time.Now()
 	scanner := bufio.NewScanner(in)
-	scanner.Split(bufio.ScanWords)
+	// scanner.Split(bufio.ScanWords)
 	for scanner.Scan() {
-		s := scanner.Text()
-		s = strings.TrimRightFunc(s, func(r rune) bool {
-			return !unicode.IsLetter(r) && !unicode.IsNumber(r)
-		})
-		word := strings.ToLower(s)
-		hashes = append(hashes, hashString(word))
-
-		unigrams[hashes[len(hashes)-1]]++
-		if len([]rune(word)) < o.MinWord {
-			bl[hashes[len(hashes)-1]] = true
+		var lineHashes []uint64
+		rawLine := scanner.Text()
+		splittedWords := strings.Split(rawLine, " ")
+		for _, s := range splittedWords{
+			s = strings.TrimRightFunc(s, func(r rune) bool {
+				return !unicode.IsLetter(r) && !unicode.IsNumber(r)
+			})
+			word := strings.ToLower(s)
+			lineHashes = append(lineHashes, hashString(word))
+			unigrams[lineHashes[len(lineHashes)-1]]++
+			if len([]rune(word)) < o.MinWord {
+				bl[lineHashes[len(lineHashes)-1]] = true
+			}
 		}
+		hashes = append(hashes, lineHashes)
+
 	}
 
 	// attempt to reduce memory allocation
@@ -180,8 +187,12 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 	if err != nil {
 		return err
 	}
-
-	o.Trie = newWordTrie(len(hashes))
+	var countWords int
+	for _, v := range hashes {
+		countWords += len(v)
+	}
+	fmt.Println(countWords)
+	o.Trie = newWordTrie(countWords)
 
 	// counting unigrams probs
 	for k, v := range unigrams {
@@ -193,18 +204,20 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 	}
 
 	// counting N-grams probs and store them in trie
-	for i := 1; i < 4; i++ {
-		grams := ngrams(hashes, i)
-		for _ngram := range grams {
-			add := true
-			for j := range _ngram {
-				if bl[_ngram[j]] {
-					add = false
-					break
+	for _, h := range hashes {
+		for i := 1; i < 4; i++ {
+			grams := ngrams(h, i)
+			for _ngram := range grams {
+				add := true
+				for j := range _ngram {
+					if bl[_ngram[j]] {
+						add = false
+						break
+					}
 				}
-			}
-			if add {
-				o.Trie.put(_ngram)
+				if add {
+					o.Trie.put(_ngram)
+				}
 			}
 		}
 	}
