@@ -349,11 +349,11 @@ func getPenalty(prob float64, dist int) float64 {
 
 	switch dist {
 	case 1:
-		alpha = 51
+		alpha = 51 // органайзер дорожный
 	case 2:
-		alpha = 55
+		alpha = 64 // ранец для начальных классов
 	case 3:
-		alpha = 60
+		alpha = 70
 	}
 	prob = prob * float64(alpha) / float64(100)
 	return prob
@@ -394,12 +394,12 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]i
 	// bigram := o.GetBigram(ngrams)
 	bigrams := TokenNgrams(ngrams, 2)
 
-	penalty := len(bigrams)
+	// penalty := len(bigrams)
 	for i := range bigrams {
 		bigram := o.GetBigram(bigrams[i])
 		if bigram != 0 {
 			biLog = math.Log(bigram)
-			penalty--
+			// penalty--
 
 			unigram := o.GetUnigram(bigrams[i], dist[bigrams[i][0]])
 			if unigram != 0 {
@@ -408,13 +408,13 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]i
 			score += uniLog + biLog
 		} else {
 			tmp := o.calculateUnigramScore(bigrams[i], dist)
-			score += tmp
+			score += (tmp + tmp)
 		}
 	}
 
-	if penalty > 0 {
-		score = o.applyPenalty(score, penalty)
-	}
+	// if penalty > 0 {
+	// 	score = o.applyPenalty(score, penalty)
+	// }
 
 	return score
 }
@@ -477,10 +477,10 @@ func (o *SpellCorrector) score(tokens []string, dist map[string]int) float64 {
 	var score float64
 
 	// if len(tokens) > 2 {
-	// 	if tokens[0] == "ранец" && tokens[1] == "для" && tokens[2] == "начальных" && tokens[3] == "" {
+	// 	if tokens[0] == "ободок" && tokens[1] == "из" && tokens[2] == "волос" && tokens[3] == "в" && tokens[4] == "виде" && tokens[5] == "косы" {
 	// 		fmt.Println(score)
 	// 	}
-	// 	if tokens[0] == "палец" && tokens[1] == "для" && tokens[2] == "начальных" && tokens[3] == "классов" {
+	// 	if tokens[0] == "ободок" && tokens[1] == "из" && tokens[2] == "волос" && tokens[3] == "в" && tokens[4] == "видок" && tokens[5] == "комы" {
 	// 		fmt.Println(score)
 	// 	}
 	// }

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"compress/gzip"
 	"encoding/gob"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -13,7 +12,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/Saimunyz/speller/internal/tokenizer/normalize"
 	"github.com/segmentio/fasthash/fnv1a"
 )
 
@@ -147,15 +145,8 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 		return nil
 	}
 
-	tokenizer := normalize.NewNormalizer()
-	t2 := time.Now().UTC()
-	err2 := tokenizer.LoadDictionariesLocal("../data/words.csv.gz", "../data/spellcheck1.csv")
-	if err2 != nil {
-		log.Fatal(err2)
-	}
-	log.Println(time.Now().Sub(t2))
-
-	var hashes []uint64
+	// var hashes []uint64
+	var hashes [][]uint64
 
 	unigrams := make(map[uint64]int)
 	bl := make(map[uint64]bool)
@@ -163,21 +154,24 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 	// reads from file and counting freq of unigrams
 	t := time.Now()
 	scanner := bufio.NewScanner(in)
-	scanner.Split(bufio.ScanWords)
+	// scanner.Split(bufio.ScanWords)
 	for scanner.Scan() {
-		s := scanner.Text()
-		s = strings.TrimRightFunc(s, func(r rune) bool {
-			return !unicode.IsLetter(r) && !unicode.IsNumber(r)
-		})
-		word := strings.ToLower(s)
-		wordTokenized := tokenizer.NormalizeWithoutMeta(word)[0][0].Lemma
-		fmt.Println(wordTokenized)
-		hashes = append(hashes, hashString(wordTokenized))
-
-		unigrams[hashes[len(hashes)-1]]++
-		if len([]rune(word)) < o.MinWord {
-			bl[hashes[len(hashes)-1]] = true
+		var lineHashes []uint64
+		rawLine := scanner.Text()
+		splittedWords := strings.Split(rawLine, " ")
+		for _, s := range splittedWords{
+			s = strings.TrimRightFunc(s, func(r rune) bool {
+				return !unicode.IsLetter(r) && !unicode.IsNumber(r)
+			})
+			word := strings.ToLower(s)
+	
+			unigrams[lineHashes[len(lineHashes)-1]]++
+			if len([]rune(word)) < o.MinWord {
+				bl[lineHashes[len(lineHashes)-1]] = true
+			}
 		}
+		hashes = append(hashes, lineHashes)
+
 	}
 
 	// attempt to reduce memory allocation
@@ -205,18 +199,20 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 	}
 
 	// counting N-grams probs and store them in trie
-	for i := 1; i < 4; i++ {
-		grams := ngrams(hashes, i)
-		for _ngram := range grams {
-			add := true
-			for j := range _ngram {
-				if bl[_ngram[j]] {
-					add = false
-					break
+	for _, h := range hashes {
+		for i := 1; i < 4; i++ {
+			grams := ngrams(h, i)
+			for _ngram := range grams {
+				add := true
+				for j := range _ngram {
+					if bl[_ngram[j]] {
+						add = false
+						break
+					}
 				}
-			}
-			if add {
-				o.Trie.put(_ngram)
+				if add {
+					o.Trie.put(_ngram)
+				}
 			}
 		}
 	}
