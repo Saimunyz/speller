@@ -1,6 +1,6 @@
 speller_config:
-  sentences_path: ../datasets/bestContext/sentences.txt.gz
-  dict_path: ../datasets/bestContext/freq-dict.txt.gz
+  sentences_path: datasets/ru/small-sentences.txt.gz
+  dict_path: datasets/ru/freq-dict.txt.gz
   min_word_freq: 1
   min_word_length: 1
   unigram_weight: 3

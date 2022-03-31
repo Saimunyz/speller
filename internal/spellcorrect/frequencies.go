@@ -160,7 +160,7 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 	for scanner.Scan() {
 		var lineHashes []uint64
 		rawLine := scanner.Text()
-		splittedWords := strings.Split(rawLine, " ")
+		splittedWords := strings.Fields(rawLine)
 		for _, s := range splittedWords {
 			s = strings.TrimRightFunc(s, func(r rune) bool {
 				return !unicode.IsLetter(r) && !unicode.IsNumber(r)
@@ -179,7 +179,7 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 
 	// attempt to reduce memory allocation
 	hashes = hashes[:len(hashes):len(hashes)]
-	log.Println("time load tokens", time.Since(t), len(hashes))
+	log.Println("time load tokens", time.Since(t), totalWords)
 	t = time.Now()
 
 	err := scanner.Err()
@@ -197,13 +197,13 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 		if v < o.MinFreq {
 			bl[k] = true
 		} else {
-			o.UniGramProbs[k] = float64(v) / float64(len(hashes))
+			o.UniGramProbs[k] = float64(v) / float64(totalWords)
 		}
 	}
 
 	// counting N-grams probs and store them in trie
-	for _, h := range hashes {
-		for i := 1; i < 4; i++ {
+	for i := 1; i < 4; i++ {
+		for _, h := range hashes {
 			grams := ngrams(h, i)
 			for _ngram := range grams {
 				add := true
