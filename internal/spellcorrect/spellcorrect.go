@@ -446,6 +446,41 @@ func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]
 	return score
 }
 
+func (o *SpellCorrector) calculateTrigramScore(ngrams []string, dist map[string]int) float64 {
+	var (
+		uniLog float64
+		biLog  float64
+		triLog float64
+		score  float64
+	)
+
+	trigrams := TokenNgrams(ngrams, 3)
+
+	for i := range trigrams {
+		trigram := o.Gettrigram(trigrams[i])
+		if trigram != 0 {
+			triLog = math.Log(trigram)
+
+			bigram := o.GetBigram(trigrams[i])
+			if bigram != 0 {
+				biLog = math.Log(bigram)
+			}
+			unigram := o.GetUnigram(trigrams[i], dist[trigrams[i][0]])
+			if unigram != 0 {
+				uniLog = math.Log(unigram)
+			}
+
+			score += uniLog + biLog + triLog
+		} else {
+			tmp := o.calculateBigramScore(trigrams[i], dist)
+			score += tmp + tmp
+		}
+
+	}
+
+	return score
+}
+
 func (o *SpellCorrector) applyPenalty(score float64, penalty int) float64 {
 	newScore := score
 	for i := 0; i < penalty; i++ {
@@ -488,60 +523,66 @@ func (o *SpellCorrector) score(tokens []string, dist map[string]int) float64 {
 	for i := range ngrams {
 		switch len(ngrams[i]) {
 		case 1:
-			var uniLog float64
+			// var uniLog float64
 
-			unigram := o.GetUnigram(ngrams[i], dist[ngrams[i][0]])
-			if unigram != 0 {
-				uniLog = math.Log(unigram)
-			}
+			// unigram := o.GetUnigram(ngrams[i], dist[ngrams[i][0]])
+			// if unigram != 0 {
+			// 	uniLog = math.Log(unigram)
+			// }
 
-			score += uniLog
+			score += o.calculateUnigramScore(ngrams[i], dist)
+
+			// score += uniLog
 		case 2:
-			var (
-				uniLog float64
-				biLog  float64
-			)
+			// var (
+			// 	uniLog float64
+			// 	biLog  float64
+			// )
 
-			bigram := o.GetBigram(ngrams[i])
-			if bigram != 0 {
-				biLog = math.Log(bigram)
+			// bigram := o.GetBigram(ngrams[i])
+			// if bigram != 0 {
+			// 	biLog = math.Log(bigram)
 
-				unigram := o.GetUnigram(ngrams[i], dist[ngrams[i][0]])
-				if unigram != 0 {
-					uniLog = math.Log(unigram)
-				}
+			// 	unigram := o.GetUnigram(ngrams[i], dist[ngrams[i][0]])
+			// 	if unigram != 0 {
+			// 		uniLog = math.Log(unigram)
+			// 	}
 
-				score += uniLog + biLog
-			} else {
-				ngram := o.calculateUnigramScore(ngrams[i], dist)
-				score += ngram
-			}
+			// 	score += uniLog + biLog
+			// } else {
+			// 	ngram := o.calculateUnigramScore(ngrams[i], dist)
+			// 	score += ngram
+			// }
+
+			score += o.calculateBigramScore(ngrams[i], dist)
 
 		case 3:
-			var (
-				uniLog float64
-				biLog  float64
-				triLog float64
-			)
+			// var (
+			// 	uniLog float64
+			// 	biLog  float64
+			// 	triLog float64
+			// )
 
-			trigram := o.Gettrigram(ngrams[i])
-			if trigram != 0 {
-				triLog = math.Log(trigram)
+			// trigram := o.Gettrigram(ngrams[i])
+			// if trigram != 0 {
+			// 	triLog = math.Log(trigram)
 
-				bigram := o.GetBigram(ngrams[i])
-				if bigram != 0 {
-					biLog = math.Log(bigram)
-				}
-				unigram := o.GetUnigram(ngrams[i], dist[ngrams[i][0]])
-				if unigram != 0 {
-					uniLog = math.Log(unigram)
-				}
+			// 	bigram := o.GetBigram(ngrams[i])
+			// 	if bigram != 0 {
+			// 		biLog = math.Log(bigram)
+			// 	}
+			// 	unigram := o.GetUnigram(ngrams[i], dist[ngrams[i][0]])
+			// 	if unigram != 0 {
+			// 		uniLog = math.Log(unigram)
+			// 	}
 
-				score += uniLog + biLog + triLog
-			} else {
-				ngram := o.calculateBigramScore(ngrams[i], dist)
-				score += ngram
-			}
+			// 	score += uniLog + biLog + triLog
+			// } else {
+			// 	ngram := o.calculateBigramScore(ngrams[i], dist)
+			// 	score += ngram
+			// }
+
+			score += o.calculateTrigramScore(ngrams[i], dist)
 		}
 	}
 	if score != 0 {
