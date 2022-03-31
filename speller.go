@@ -83,23 +83,23 @@ func (s *Speller) SpellCorrect(query string) string {
 	var result string
 
 	// splitting query by 3 words lenght
-	// words := strings.Fields(query)
-	// if len(words) > 3 {
-	// 	var shortQueries []string
-	// 	for i := 0; i < len(words); i += 3 {
-	// 		stop := i + 3
-	// 		if i+3 >= len(words) {
-	// 			stop = len(words)
-	// 		}
-	// 		shortQuery := strings.Join(words[i:stop:stop], " ")
-	// 		suggestion := s.spellcorrector.SpellCorrect(shortQuery)
-	// 		shortQueries = append(shortQueries, suggestion[0].Tokens...)
-	// 	}
-	// 	result = strings.Join(shortQueries, " ")
-	// } else {
-	suggestions := s.spellcorrector.SpellCorrect(query)
-	result = strings.Join(suggestions[0].Tokens, " ")
-	// }
+	words := strings.Fields(query)
+	if len(words) > 3 {
+		var shortQueries []string
+		for i := 0; i < len(words); i += 3 {
+			stop := i + 3
+			if i+3 >= len(words) {
+				stop = len(words)
+			}
+			shortQuery := strings.Join(words[i:stop:stop], " ")
+			suggestion := s.spellcorrector.SpellCorrect(shortQuery)
+			shortQueries = append(shortQueries, suggestion[0].Tokens...)
+		}
+		result = strings.Join(shortQueries, " ")
+	} else {
+		suggestions := s.spellcorrector.SpellCorrect(query)
+		result = strings.Join(suggestions[0].Tokens, " ")
+	}
 
 	// returns the most likely option
 	return result
