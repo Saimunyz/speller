@@ -1,9 +1,9 @@
 speller_config:
-  sentences_path: datasets/ru/small-sentences.txt.gz
+  sentences_path: datasets/ru/queriesRU2.txt.gz
   dict_path: datasets/ru/freq-dict.txt.gz
   min_word_freq: 1
   min_word_length: 1
-  unigram_weight: 3
+  unigram_weight: 1
   bigram_weight: 5
-  trigram_weight: 2
+  trigram_weight: 4
   auto_train_mode: false

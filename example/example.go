@@ -14,7 +14,7 @@ func main() {
 	speller := speller.NewSpeller("config.yaml")
 
 	// load modelы
-	err := speller.LoadModel("models/sentences.txt.gz")
+	err := speller.LoadModel("models/queriesRU-2.gz")
 	if err != nil {
 		fmt.Printf("No such file: %v\n", err)
 		//panic(err)
@@ -22,7 +22,7 @@ func main() {
 
 	// or train model and save
 	// speller.Train()
-	// err := speller.SaveModel("models/sentences.txt.gz")
+	// err := speller.SaveModel("models/queriesRU-2.gz")
 	// if err != nil {
 	// 	fmt.Printf("No such file: %v\n", err)
 	// 	//panic(err)
@@ -31,6 +31,12 @@ func main() {
 	// correct typos
 	correct := speller.SpellCorrect("канканцелярский")
 	fmt.Println("канканцелярский ->", correct)
+
+	correct = speller.SpellCorrect("Желтая скатерть")
+	fmt.Println("Желтая скатерть ->", correct)
+
+	correct = speller.SpellCorrect("желиая скаткрть")
+	fmt.Println("желиая скаткрть ->", correct)
 
 	correct = speller.SpellCorrect("томат дородгый")
 	fmt.Println("томат дородгый ->", correct)
@@ -72,4 +78,7 @@ func main() {
 
 	correct = speller.SpellCorrect("раниц жля еачальнфх клвсмов")
 	fmt.Println("ранец жля еачальнфх клвсмов ->", correct)
+
+	correct = speller.SpellCorrect("винеи пуз")
+	fmt.Println("винеи пуз ->", correct)
 }

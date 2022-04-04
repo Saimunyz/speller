@@ -74,32 +74,89 @@ func (s *Speller) Train() {
 	runtime.GC()
 }
 
+func (s *Speller) splitByWords(line string, amountOfWords int) []string {
+	words := strings.Fields(line)
+	if len(words) <= amountOfWords {
+		return []string{line}
+	}
+
+	var lines []string
+
+	for i := 0; i+amountOfWords <= len(words); i++ {
+		lines = append(lines, strings.Join(words[i:i+amountOfWords], " "))
+	}
+
+	// for i := 0; i < len(words); i += amountOfWords {
+	// 	stop := i + amountOfWords
+	// 	if stop > len(words) {
+	// 		start := len(words) - amountOfWords
+	// 		lines = append(lines, strings.Join(words[start:], " "))
+	// 	} else {
+	// 		lines = append(lines, strings.Join(words[i:stop], " "))
+	// 	}
+	// }
+
+	return lines
+}
+
+func (o *Speller) joinByWords(lines []string, splitedByWords int) string {
+	words := strings.Fields(lines[0])
+	if len(words) < splitedByWords {
+		return lines[0]
+	}
+
+	query := strings.Builder{}
+
+	for _, line := range lines {
+		words = strings.Fields(line)
+		query.Grow(len([]rune(words[0])) + 1)
+		query.WriteString(words[0])
+		query.WriteRune(' ')
+	}
+
+	for _, word := range words[1:] {
+		query.Grow(len([]rune(word)) + 1)
+		query.WriteString(word)
+		query.WriteRune(' ')
+	}
+
+	return strings.TrimSpace(query.String())
+}
+
 //SpellCorrect - corrects all typos in a given query
 func (s *Speller) SpellCorrect(query string) string {
 	if len(query) < 1 {
 		return query
 	}
 
-	var result string
+	var suggestions []string
+
+	queries := s.splitByWords(query, 3)
+	for _, query := range queries {
+		suggestion := s.spellcorrector.SpellCorrect(query)
+		suggestions = append(suggestions, strings.Join(suggestion[0].Tokens, " "))
+	}
+
+	result := s.joinByWords(suggestions, 3)
 
 	// splitting query by 3 words lenght
-	words := strings.Fields(query)
-	if len(words) > 3 {
-		var shortQueries []string
-		for i := 0; i < len(words); i += 3 {
-			stop := i + 3
-			if i+3 >= len(words) {
-				stop = len(words)
-			}
-			shortQuery := strings.Join(words[i:stop:stop], " ")
-			suggestion := s.spellcorrector.SpellCorrect(shortQuery)
-			shortQueries = append(shortQueries, suggestion[0].Tokens...)
-		}
-		result = strings.Join(shortQueries, " ")
-	} else {
-		suggestions := s.spellcorrector.SpellCorrect(query)
-		result = strings.Join(suggestions[0].Tokens, " ")
-	}
+	// words := strings.Fields(query)
+	// if len(words) > 3 {
+	// 	var shortQueries []string
+	// 	for i := 0; i < len(words); i += 3 {
+	// 		stop := i + 3
+	// 		if i+3 >= len(words) {
+	// 			stop = len(words)
+	// 		}
+	// 		shortQuery := strings.Join(words[i:stop:stop], " ")
+	// 		suggestion := s.spellcorrector.SpellCorrect(shortQuery)
+	// 		shortQueries = append(shortQueries, suggestion[0].Tokens...)
+	// 	}
+	// 	result = strings.Join(shortQueries, " ")
+	// } else {
+	// 	suggestions := s.spellcorrector.SpellCorrect(query)
+	// 	result = strings.Join(suggestions[0].Tokens, " ")
+	// }
 
 	// returns the most likely option
 	return result
