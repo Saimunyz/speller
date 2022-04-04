@@ -172,20 +172,20 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 		var suggestions spell.SuggestionList
 		o.spell.MaxEditDistance = 2
 
-		if len([]rune(tokens[i])) < 5 {
+		// if len([]rune(tokens[i])) < 5 {
+		// 	suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
+		// } else {
+		suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
+		// if len(suggestions) == 0 {
+		// suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
+		if len(suggestions) == 0 {
+			o.spell.MaxEditDistance = 3
 			suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
-		} else {
-			suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
-			// if len(suggestions) == 0 {
-			// suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
 			if len(suggestions) == 0 {
-				o.spell.MaxEditDistance = 3
-				suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
-				if len(suggestions) == 0 {
-					suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
-				}
+				suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
 			}
 		}
+		// }
 		// }
 
 		// if word in dict then not changing it

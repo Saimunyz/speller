@@ -81,4 +81,10 @@ func main() {
 
 	correct = speller.SpellCorrect("винеи пуз")
 	fmt.Println("винеи пуз ->", correct)
+
+	correct = speller.SpellCorrect("емеость ддя мцсора бкз крфшки")
+	fmt.Println("емеость ддя мцсора бкз крфшки ->", correct)
+
+	correct = speller.SpellCorrect("коем длч куттеулы")
+	fmt.Println("коем длч куттеулы ->", correct)
 }
