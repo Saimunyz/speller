@@ -358,7 +358,7 @@ func getPenalty(prob float64, dist float64) float64 {
 	relative := (dist - 0) / (20 - 0)
 	scaled_value := 2 + (10-2)*relative
 
-	alpha = scaled_value * 100
+	alpha = math.Log10(scaled_value) * 100
 
 	if alpha >= 100. {
 		alpha = 99.
