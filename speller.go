@@ -28,8 +28,19 @@ func NewSpeller(configPapth string) *Speller {
 	tokenizerWords := spellcorrect.NewSimpleTokenizer()
 	freq := spellcorrect.NewFrequencies(cfg.SpellerConfig.MinWordLength, cfg.SpellerConfig.MinWordFreq)
 
-	weights := []float64{cfg.SpellerConfig.UnigramWeight, cfg.SpellerConfig.BigramWeight, cfg.SpellerConfig.TrigramWeight}
-	sc := spellcorrect.NewSpellCorrector(tokenizerWords, freq, weights, cfg.SpellerConfig.AutoTrainMode)
+	weights := []float64{
+		cfg.SpellerConfig.UnigramWeight,
+		cfg.SpellerConfig.BigramWeight,
+		cfg.SpellerConfig.TrigramWeight,
+	}
+
+	sc := spellcorrect.NewSpellCorrector(
+		tokenizerWords,
+		freq,
+		weights,
+		cfg.SpellerConfig.AutoTrainMode,
+		cfg.SpellerConfig.MinWordFreq,
+	)
 
 	spller := &Speller{
 		spellcorrector: sc,
@@ -138,25 +149,6 @@ func (s *Speller) SpellCorrect(query string) string {
 	}
 
 	result := s.joinByWords(suggestions, 3)
-
-	// splitting query by 3 words lenght
-	// words := strings.Fields(query)
-	// if len(words) > 3 {
-	// 	var shortQueries []string
-	// 	for i := 0; i < len(words); i += 3 {
-	// 		stop := i + 3
-	// 		if i+3 >= len(words) {
-	// 			stop = len(words)
-	// 		}
-	// 		shortQuery := strings.Join(words[i:stop:stop], " ")
-	// 		suggestion := s.spellcorrector.SpellCorrect(shortQuery)
-	// 		shortQueries = append(shortQueries, suggestion[0].Tokens...)
-	// 	}
-	// 	result = strings.Join(shortQueries, " ")
-	// } else {
-	// 	suggestions := s.spellcorrector.SpellCorrect(query)
-	// 	result = strings.Join(suggestions[0].Tokens, " ")
-	// }
 
 	// returns the most likely option
 	return result

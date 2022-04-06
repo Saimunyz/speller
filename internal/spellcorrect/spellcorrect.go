@@ -39,16 +39,24 @@ type SpellCorrector struct {
 	frequencies   FrequencyContainer
 	spell         *spell.Spell
 	weights       []float64
+	minFreq       int
 	autoTrainMode bool
 }
 
 // NewSpellCorrector - creates new SpellCorrector instance
-func NewSpellCorrector(tokenizer Tokenizer, frequencies FrequencyContainer, weights []float64, autoTrainMode bool) *SpellCorrector {
+func NewSpellCorrector(
+	tokenizer Tokenizer,
+	frequencies FrequencyContainer,
+	weights []float64,
+	autoTrainMode bool,
+	minFreq int,
+) *SpellCorrector {
 	ans := SpellCorrector{
 		tokenizer:     tokenizer,
 		frequencies:   frequencies,
 		spell:         spell.New(),
 		weights:       weights,
+		minFreq:       minFreq,
 		autoTrainMode: autoTrainMode,
 	}
 	ans.spell.MaxEditDistance = 3
@@ -82,6 +90,11 @@ func (o *SpellCorrector) LoadFreqDict(in io.Reader) error {
 		if err != nil {
 			return err
 		}
+
+		if freq < uint64(o.minFreq) {
+			continue
+		}
+
 		o.spell.AddEntry(spell.Entry{
 			Frequency: freq,
 			Word:      parts[0],
@@ -157,13 +170,9 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 	allSuggestions := make([][]string, len(tokens))
 	dist := make(map[string]float64)
 
-	// if o.frequencies.Get(tokens) != 0.0 {
-	// 	dist[strings.Join(tokens, " ")] = 0
-	// }
-
 	for i := range tokens {
 		// dont look at short words
-		if len([]rune(tokens[i])) < 2 {
+		if len([]rune(tokens[i])) < 3 {
 			allSuggestions[i] = append(allSuggestions[i], tokens[i])
 			dist[tokens[i]] = 0
 		}
@@ -191,14 +200,6 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 		// if word in dict then not changing it
 		// if len(suggestions) > 0 && suggestions[0].Distance == int(spell.LevelBest) {
 		// 	allSuggestions[i] = append(allSuggestions[i], suggestions[0].Word)
-		// }
-
-		// // if we got a word == token and that word's Freq > 50 returns it
-		// for _, sug := range suggestions {
-		// 	if sug.Word == tokens[i] {
-		// 		allSuggestions[i] = append(allSuggestions[i], tokens[i])
-		// 		break
-		// 	}
 		// }
 
 		// if no words == token gets 20 first suggestions
@@ -344,6 +345,8 @@ func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
 	return items
 }
 
+// getPenalty - returns penalty as a percentage of the
+// obtained probability for the distance of the word
 func getPenalty(prob float64, dist float64) float64 {
 	var alpha float64
 
@@ -351,28 +354,21 @@ func getPenalty(prob float64, dist float64) float64 {
 		return 0
 	}
 
-	if dist == 1 {
-		alpha = math.Log10(dist+0.5) * 100
-	} else {
-		alpha = math.Log10(dist) * 100
-	}
+	// change space from 0 - 20 to 2 - 10
+	relative := (dist - 0) / (20 - 0)
+	scaled_value := 2 + (10-2)*relative
+
+	alpha = scaled_value * 100
 
 	if alpha >= 100. {
 		alpha = 99.
 	}
 
-	// switch dist {
-	// case 1:
-	// 	alpha = 51 // органайзер дорожный
-	// case 2:
-	// 	alpha = 64 // ранец для начальных классов
-	// case 3:
-	// 	alpha = 70
-	// }
 	prob = prob * float64(alpha) / float64(100)
 	return prob
 }
 
+// GetUnigram - returns unigram with penalties
 func (o *SpellCorrector) GetUnigram(tokens []string, dist float64) float64 {
 	unigrams := TokenNgrams(tokens, 1)
 
@@ -382,6 +378,7 @@ func (o *SpellCorrector) GetUnigram(tokens []string, dist float64) float64 {
 	return prob
 }
 
+// GetBigram - returns bigrams
 func (o *SpellCorrector) GetBigram(tokens []string) float64 {
 	bigrams := TokenNgrams(tokens, 2)
 
@@ -390,7 +387,8 @@ func (o *SpellCorrector) GetBigram(tokens []string) float64 {
 	return prob
 }
 
-func (o *SpellCorrector) Gettrigram(tokens []string) float64 {
+// GetTrigram - returns trigrams
+func (o *SpellCorrector) GetTrigram(tokens []string) float64 {
 	trigrams := TokenNgrams(tokens, 3)
 
 	prob := o.frequencies.Get(trigrams[0])
@@ -398,6 +396,7 @@ func (o *SpellCorrector) Gettrigram(tokens []string) float64 {
 	return prob
 }
 
+// calculateBigramScore - returns bigram score of a given words
 func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]float64) float64 {
 	var (
 		uniLog float64
@@ -405,19 +404,14 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]f
 		score  float64
 	)
 
-	// bigram := o.GetBigram(ngrams)
 	bigrams := TokenNgrams(ngrams, 2)
 
 	// penalty := len(bigrams)
 	for i := range bigrams {
 		bigram := o.GetBigram(bigrams[i])
 		if bigram != 0 {
-			// if _, ok := dist[strings.Join(bigrams[i], " ")]; !ok {
-			// 	bigram -= getPenalty(bigram, 1)
-			// }
 			bigram -= getPenalty(bigram, dist[bigrams[i][0]]+dist[bigrams[i][1]])
 			biLog = math.Log(bigram) + o.weights[1]
-			// penalty--
 
 			unigram := o.GetUnigram(bigrams[i], dist[bigrams[i][0]])
 			if unigram != 0 {
@@ -430,13 +424,10 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]f
 		}
 	}
 
-	// if penalty > 0 {
-	// 	score = o.applyPenalty(score, penalty)
-	// }
-
 	return score
 }
 
+// calculateUnigramScore - returns unigram score of a given words
 func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]float64) float64 {
 	var (
 		uniLog float64
@@ -464,6 +455,7 @@ func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]
 	return score
 }
 
+// calculateTrigramScore -  returns trigrams score of a given words
 func (o *SpellCorrector) calculateTrigramScore(ngrams []string, dist map[string]float64) float64 {
 	var (
 		uniLog float64
@@ -475,11 +467,8 @@ func (o *SpellCorrector) calculateTrigramScore(ngrams []string, dist map[string]
 	trigrams := TokenNgrams(ngrams, 3)
 
 	for i := range trigrams {
-		trigram := o.Gettrigram(trigrams[i])
+		trigram := o.GetTrigram(trigrams[i])
 		if trigram != 0 {
-			// if _, ok := dist[strings.Join(trigrams[i], " ")]; !ok {
-			// 	trigram -= getPenalty(trigram, 1)
-			// }
 			trigram -= getPenalty(trigram, dist[trigrams[i][0]]+dist[trigrams[i][1]]+dist[trigrams[i][2]])
 			triLog = math.Log(trigram) + o.weights[2]
 
@@ -503,6 +492,7 @@ func (o *SpellCorrector) calculateTrigramScore(ngrams []string, dist map[string]
 	return score
 }
 
+// applyPenalty - applies penalty to given score
 func (o *SpellCorrector) applyPenalty(score float64, penalty int) float64 {
 	newScore := score
 	for i := 0; i < penalty; i++ {
@@ -511,7 +501,7 @@ func (o *SpellCorrector) applyPenalty(score float64, penalty int) float64 {
 	return newScore
 }
 
-// scpre - scoring each sentence
+// score - scoring each sentence
 func (o *SpellCorrector) score(tokens []string, dist map[string]float64) float64 {
 	// score := 0.0
 	// for i := 1; i < 4; i++ {
@@ -545,65 +535,10 @@ func (o *SpellCorrector) score(tokens []string, dist map[string]float64) float64
 	for i := range ngrams {
 		switch len(ngrams[i]) {
 		case 1:
-			// var uniLog float64
-
-			// unigram := o.GetUnigram(ngrams[i], dist[ngrams[i][0]])
-			// if unigram != 0 {
-			// 	uniLog = math.Log(unigram)
-			// }
-
 			score += o.calculateUnigramScore(ngrams[i], dist)
-
-			// score += uniLog
 		case 2:
-			// var (
-			// 	uniLog float64
-			// 	biLog  float64
-			// )
-
-			// bigram := o.GetBigram(ngrams[i])
-			// if bigram != 0 {
-			// 	biLog = math.Log(bigram)
-
-			// 	unigram := o.GetUnigram(ngrams[i], dist[ngrams[i][0]])
-			// 	if unigram != 0 {
-			// 		uniLog = math.Log(unigram)
-			// 	}
-
-			// 	score += uniLog + biLog
-			// } else {
-			// 	ngram := o.calculateUnigramScore(ngrams[i], dist)
-			// 	score += ngram
-			// }
-
 			score += o.calculateBigramScore(ngrams[i], dist)
-
 		case 3:
-			// var (
-			// 	uniLog float64
-			// 	biLog  float64
-			// 	triLog float64
-			// )
-
-			// trigram := o.Gettrigram(ngrams[i])
-			// if trigram != 0 {
-			// 	triLog = math.Log(trigram)
-
-			// 	bigram := o.GetBigram(ngrams[i])
-			// 	if bigram != 0 {
-			// 		biLog = math.Log(bigram)
-			// 	}
-			// 	unigram := o.GetUnigram(ngrams[i], dist[ngrams[i][0]])
-			// 	if unigram != 0 {
-			// 		uniLog = math.Log(unigram)
-			// 	}
-
-			// 	score += uniLog + biLog + triLog
-			// } else {
-			// 	ngram := o.calculateBigramScore(ngrams[i], dist)
-			// 	score += ngram
-			// }
-
 			score += o.calculateTrigramScore(ngrams[i], dist)
 		}
 	}

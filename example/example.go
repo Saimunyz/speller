@@ -14,7 +14,7 @@ func main() {
 	speller := speller.NewSpeller("config.yaml")
 
 	// load modelы
-	err := speller.LoadModel("models/queriesRU-2.gz")
+	err := speller.LoadModel("models/model-without_singleWords.gz")
 	if err != nil {
 		fmt.Printf("No such file: %v\n", err)
 		//panic(err)
@@ -22,7 +22,7 @@ func main() {
 
 	// or train model and save
 	// speller.Train()
-	// err := speller.SaveModel("models/queriesRU-2.gz")
+	// err := speller.SaveModel("models/model-without_singleWords.gz")
 	// if err != nil {
 	// 	fmt.Printf("No such file: %v\n", err)
 	// 	//panic(err)
