@@ -40,6 +40,7 @@ type SpellCorrector struct {
 	spell         *spell.Spell
 	weights       []float64
 	minFreq       int
+	penalty       float64
 	autoTrainMode bool
 }
 
@@ -50,6 +51,7 @@ func NewSpellCorrector(
 	weights []float64,
 	autoTrainMode bool,
 	minFreq int,
+	penalty float64,
 ) *SpellCorrector {
 	ans := SpellCorrector{
 		tokenizer:     tokenizer,
@@ -57,6 +59,7 @@ func NewSpellCorrector(
 		spell:         spell.New(),
 		weights:       weights,
 		minFreq:       minFreq,
+		penalty:       penalty,
 		autoTrainMode: autoTrainMode,
 	}
 	ans.spell.MaxEditDistance = 3
@@ -206,7 +209,7 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 		if len(allSuggestions[i]) == 0 {
 			for j := 0; j < len(suggestions) && j < 20; j++ {
 				allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
-				dist[suggestions[j].Word] = float64(j) + float64(j)
+				dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)*o.penalty
 			}
 		}
 
@@ -356,24 +359,26 @@ func getPenalty(prob float64, dist float64) float64 {
 
 	// change space from 0 - 20 to 2 - 10
 	relative := (dist - 0) / (20 - 0)
-	scaled_value := 2 + (10-2)*relative
+	scaled_value := 1 + (10-1)*relative
 
 	alpha = math.Log10(scaled_value) * 100
 
-	if alpha >= 100. {
-		alpha = 99.
-	}
+	// if alpha >= 100. {
+	// 	alpha = 99.
+	// }
 
 	prob = prob * float64(alpha) / float64(100)
+	if prob < 0 {
+		prob *= -1
+	}
 	return prob
 }
 
 // GetUnigram - returns unigram with penalties
-func (o *SpellCorrector) GetUnigram(tokens []string, dist float64) float64 {
+func (o *SpellCorrector) GetUnigram(tokens []string) float64 {
 	unigrams := TokenNgrams(tokens, 1)
 
 	prob := o.frequencies.Get(unigrams[0])
-	prob -= getPenalty(prob, dist)
 
 	return prob
 }
@@ -410,13 +415,15 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]f
 	for i := range bigrams {
 		bigram := o.GetBigram(bigrams[i])
 		if bigram != 0 {
-			bigram -= getPenalty(bigram, dist[bigrams[i][0]]+dist[bigrams[i][1]])
-			biLog = math.Log(bigram) + o.weights[1]
+			biLog = math.Log(bigram)
+			biLog -= getPenalty(biLog, dist[bigrams[i][0]]+dist[bigrams[i][1]])
 
-			unigram := o.GetUnigram(bigrams[i], dist[bigrams[i][0]])
+			unigram := o.GetUnigram(bigrams[i])
 			if unigram != 0 {
 				uniLog = math.Log(unigram) + o.weights[0]
+				uniLog -= getPenalty(uniLog, dist[bigrams[i][0]])
 			}
+
 			score += uniLog + biLog
 		} else {
 			tmp := o.calculateUnigramScore(bigrams[i], dist)
@@ -439,10 +446,11 @@ func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]
 	penalty := len(unigrams)
 
 	for i := range unigrams {
-		unigram := o.GetUnigram(unigrams[i], dist[unigrams[i][0]])
+		unigram := o.GetUnigram(unigrams[i])
 		if unigram != 0 {
 			penalty--
-			uniLog = math.Log(unigram) + o.weights[0]
+			uniLog = math.Log(unigram)
+			uniLog -= getPenalty(uniLog, dist[unigrams[i][0]])
 		}
 
 		score += uniLog
@@ -469,16 +477,18 @@ func (o *SpellCorrector) calculateTrigramScore(ngrams []string, dist map[string]
 	for i := range trigrams {
 		trigram := o.GetTrigram(trigrams[i])
 		if trigram != 0 {
-			trigram -= getPenalty(trigram, dist[trigrams[i][0]]+dist[trigrams[i][1]]+dist[trigrams[i][2]])
-			triLog = math.Log(trigram) + o.weights[2]
+			triLog = math.Log(trigram)
+			triLog -= getPenalty(triLog, dist[trigrams[i][0]]+dist[trigrams[i][1]]+dist[trigrams[i][2]])
 
 			bigram := o.GetBigram(trigrams[i])
 			if bigram != 0 {
 				biLog = math.Log(bigram) + o.weights[1]
+				biLog -= getPenalty(biLog, dist[trigrams[i][0]]+dist[trigrams[i][1]])
 			}
-			unigram := o.GetUnigram(trigrams[i], dist[trigrams[i][0]])
+			unigram := o.GetUnigram(trigrams[i])
 			if unigram != 0 {
 				uniLog = math.Log(unigram) + o.weights[0]
+				uniLog -= getPenalty(uniLog, dist[trigrams[i][0]])
 			}
 
 			score += uniLog + biLog + triLog
@@ -524,10 +534,10 @@ func (o *SpellCorrector) score(tokens []string, dist map[string]float64) float64
 	var score float64
 
 	// if len(tokens) > 2 {
-	// 	if tokens[0] == "в" && tokens[1] == "вид" && tokens[2] == "коса" {
+	// 	if tokens[0] == "в" && tokens[1] == "виде" && tokens[2] == "косы" {
 	// 		fmt.Println(score)
 	// 	}
-	// 	if tokens[0] == "в" && tokens[1] == "вид" && tokens[2] == "колы" {
+	// 	if tokens[0] == "в" && tokens[1] == "виде" && tokens[2] == "кота" {
 	// 		fmt.Println(score)
 	// 	}
 	// }

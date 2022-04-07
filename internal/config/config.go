@@ -15,6 +15,7 @@ type SpellerConfig struct {
 	DictPath      string  `yaml:"dict_path"`
 	MinWordFreq   int     `yaml:"min_word_freq"`
 	MinWordLength int     `yaml:"min_word_length"`
+	Penalty       float64 `yaml:"penalty"`
 	UnigramWeight float64 `yaml:"unigram_weight"`
 	BigramWeight  float64 `yaml:"bigram_weight"`
 	TrigramWeight float64 `yaml:"trigram_weight"`
@@ -87,6 +88,9 @@ func setDefault(cfg *Config) (*Config, error) {
 	}
 	if cfg.SpellerConfig.MinWordFreq == 0 {
 		cfg.SpellerConfig.MinWordFreq = 5
+	}
+	if cfg.SpellerConfig.Penalty == 0 {
+		cfg.SpellerConfig.Penalty = 2
 	}
 	if cfg.SpellerConfig.UnigramWeight == 0 {
 		cfg.SpellerConfig.UnigramWeight = 100

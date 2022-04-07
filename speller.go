@@ -40,6 +40,7 @@ func NewSpeller(configPapth string) *Speller {
 		weights,
 		cfg.SpellerConfig.AutoTrainMode,
 		cfg.SpellerConfig.MinWordFreq,
+		cfg.SpellerConfig.Penalty,
 	)
 
 	spller := &Speller{

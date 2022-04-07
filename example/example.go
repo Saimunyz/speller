@@ -14,7 +14,7 @@ func main() {
 	speller := speller.NewSpeller("config.yaml")
 
 	// load modelы
-	err := speller.LoadModel("models/model-without_singleWords.gz")
+	err := speller.LoadModel("models/AllRu-model.gz")
 	if err != nil {
 		fmt.Printf("No such file: %v\n", err)
 		//panic(err)
@@ -22,7 +22,7 @@ func main() {
 
 	// or train model and save
 	// speller.Train()
-	// err := speller.SaveModel("models/model-without_singleWords.gz")
+	// err := speller.SaveModel("models/AllRu-model.gz")
 	// if err != nil {
 	// 	fmt.Printf("No such file: %v\n", err)
 	// 	//panic(err)
@@ -87,4 +87,7 @@ func main() {
 
 	correct = speller.SpellCorrect("коем длч куттеулы")
 	fmt.Println("коем длч куттеулы ->", correct)
+
+	correct = speller.SpellCorrect("гпбор для спеуиф родсрлнухи есеости")
+	fmt.Println("гпбор для спеуиф родсрлнухи есеости ->", correct)
 }

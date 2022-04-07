@@ -11,7 +11,7 @@ import (
 func getSpellCorrector() *SpellCorrector {
 	tokenizer := NewSimpleTokenizer()
 	freq := NewFrequencies(0, 0)
-	sc := NewSpellCorrector(tokenizer, freq, []float64{100, 15, 5}, false, 1)
+	sc := NewSpellCorrector(tokenizer, freq, []float64{100, 15, 5}, false, 1, 4)
 	return sc
 }
 
