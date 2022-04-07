@@ -29,6 +29,8 @@ func main() {
 	// }
 
 	// correct typos
+	correct2 := speller.SpellCorrect2("амоскитная асетка йна впрогулочную акляску")
+	fmt.Println("амоскитная асетка йна впрогулочную акляску ->", correct2)
 	correct := speller.SpellCorrect("канканцелярский")
 	fmt.Println("канканцелярский ->", correct)
 
@@ -58,7 +60,7 @@ func main() {
 	correct = speller.SpellCorrect("чемодан дородный")
 	fmt.Println("чемодан дородный ->", correct)
 
-	correct = speller.SpellCorrect("амоскитная асетка йна впрогулочную акляску")
+	correct = speller.SpellCorrect2("амоскитная асетка йна впрогулочную акляску")
 	fmt.Println("амоскитная асетка йна впрогулочную акляску ->", correct)
 
 	correct = speller.SpellCorrect("брпття сьругацеие ьпудно бытб юоглм")

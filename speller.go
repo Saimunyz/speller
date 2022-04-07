@@ -154,6 +154,49 @@ func (s *Speller) SpellCorrect(query string) string {
 	return result
 }
 
+func (s *Speller) SpellCorrect2(query string) string {
+	if len(query) < 1 {
+		return query
+	}
+	var suggestions []string
+	spltQuery := strings.Split(query, " ")
+	shortWords := make(map[int]string) // saves index and short words
+	longWords := make([]string, 0, len(spltQuery))
+	for i, word := range spltQuery {
+		if len([]rune(word)) < 4 {
+			shortWords[i] = word
+			continue
+		}
+		longWords = append(longWords, word)
+	}
+	for key, value := range shortWords {
+		shortWords[key] = s.spellcorrector.SpellCorrect(value)[0].Tokens[0]
+	}
+	var i int
+	for ; i < len(longWords) - 3; i += 3 {
+		suggestion := s.spellcorrector.SpellCorrect(strings.Join(longWords[i:i+3], " "))[0].Tokens
+
+		suggestions = append(suggestions, suggestion...)
+	}
+	suggestion := s.spellcorrector.SpellCorrect(strings.Join(longWords[i:], " "))[0].Tokens[0]
+	suggestions = append(suggestions, strings.Split(suggestion, " ")...)
+	var extInd int
+	var result string
+	for j := range spltQuery {
+		if word, ok := shortWords[j]; ok {
+			result = strings.Join([]string{result, word}, " ")
+			continue
+		}
+		result = strings.Join([]string{result, suggestions[extInd]}, " ")
+		extInd++
+	}
+
+
+	// returns the most likely option
+	return result
+}
+
+
 // SpellCorrectAllSuggestions - returns top 10 corrections typos in a given query
 // func (s *Speller) SpellCorrectAllSuggestions(query string) []string {
 // 	suggestions := s.spellcorrector.SpellCorrect(query)

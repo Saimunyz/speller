@@ -1,0 +1,9 @@
+speller_config:
+  sentences_path: ../datasets/without_singleWords.txt.gz
+  dict_path: ../datasets/without_singleWords-freq-dict.txt.gz
+  min_word_freq: 1
+  min_word_length: 1
+  unigram_weight: 1
+  bigram_weight: 5
+  trigram_weight: 4
+  auto_train_mode: false
