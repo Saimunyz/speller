@@ -11,26 +11,34 @@ import (
 func main() {
 	fmt.Println("Example of usage")
 	// create speller
-	speller := speller.NewSpeller("../config.yaml")
+	speller := speller.NewSpeller("config.yaml")
 
 	// load modelы
-	// err := speller.LoadModel("models/sentences.txt.gz")
-	// if err != nil {
-	// 	fmt.Printf("No such file: %v\n", err)
-	// 	//panic(err)
-	// }
-
-	// or train model and save
-	speller.Train()
-	err := speller.SaveModel("models/sentences.txt.gz")
+	err := speller.LoadModel("models/model-without_singleWords.gz")
 	if err != nil {
 		fmt.Printf("No such file: %v\n", err)
 		//panic(err)
 	}
 
+	// or train model and save
+	// speller.Train()
+	// err := speller.SaveModel("models/model-without_singleWords.gz")
+	// if err != nil {
+	// 	fmt.Printf("No such file: %v\n", err)
+	// 	//panic(err)
+	// }
+
 	// correct typos
+	correct2 := speller.SpellCorrect2("амоскитная асетка йна впрогулочную акляску")
+	fmt.Println("амоскитная асетка йна впрогулочную акляску ->", correct2)
 	correct := speller.SpellCorrect("канканцелярский")
 	fmt.Println("канканцелярский ->", correct)
+
+	correct = speller.SpellCorrect("Желтая скатерть")
+	fmt.Println("Желтая скатерть ->", correct)
+
+	correct = speller.SpellCorrect("желиая скаткрть")
+	fmt.Println("желиая скаткрть ->", correct)
 
 	correct = speller.SpellCorrect("томат дородгый")
 	fmt.Println("томат дородгый ->", correct)
@@ -52,7 +60,7 @@ func main() {
 	correct = speller.SpellCorrect("чемодан дородный")
 	fmt.Println("чемодан дородный ->", correct)
 
-	correct = speller.SpellCorrect("амоскитная асетка йна впрогулочную акляску")
+	correct = speller.SpellCorrect2("амоскитная асетка йна впрогулочную акляску")
 	fmt.Println("амоскитная асетка йна впрогулочную акляску ->", correct)
 
 	correct = speller.SpellCorrect("брпття сьругацеие ьпудно бытб юоглм")
@@ -72,4 +80,13 @@ func main() {
 
 	correct = speller.SpellCorrect("раниц жля еачальнфх клвсмов")
 	fmt.Println("ранец жля еачальнфх клвсмов ->", correct)
+
+	correct = speller.SpellCorrect("винеи пуз")
+	fmt.Println("винеи пуз ->", correct)
+
+	correct = speller.SpellCorrect("емеость ддя мцсора бкз крфшки")
+	fmt.Println("емеость ддя мцсора бкз крфшки ->", correct)
+
+	correct = speller.SpellCorrect("коем длч куттеулы")
+	fmt.Println("коем длч куттеулы ->", correct)
 }

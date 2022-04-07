@@ -11,7 +11,7 @@ import (
 func getSpellCorrector() *SpellCorrector {
 	tokenizer := NewSimpleTokenizer()
 	freq := NewFrequencies(0, 0)
-	sc := NewSpellCorrector(tokenizer, freq, []float64{100, 15, 5}, false)
+	sc := NewSpellCorrector(tokenizer, freq, []float64{100, 15, 5}, false, 1)
 	return sc
 }
 
@@ -94,6 +94,12 @@ func TestSpellCorrect(t *testing.T) {
 	s1 := "restaurant in Bonn"
 
 	suggestions := sc.SpellCorrect(s1)
+	for i, sug := range suggestions {
+		if sug.Tokens == nil {
+			suggestions = suggestions[:i]
+			break
+		}
+	}
 	if len(suggestions) != 1 {
 		t.Errorf("error getting suggestion for not existant")
 		return
@@ -131,17 +137,25 @@ func TestGetSuggestionCandidates(t *testing.T) {
 
 	expected := [][]string{
 
-		{"1", "2", "3"},
-		{"a", "2", "3"},
-		{"aa", "2", "3"},
-		{"1", "b", "3"},
-		{"a", "b", "3"},
 		{"aa", "b", "3"},
+		{"aa", "2", "3"},
+		{"a", "b", "3"},
+		{"a", "2", "3"},
+		{"1", "b", "3"},
+		{"1", "2", "3"},
 	}
 
 	sc := getSpellCorrector()
+	dist := make(map[string]float64)
 
-	candidates := sc.getSuggestionCandidates(allSuggestions)
+	candidates := sc.getSuggestionCandidates(allSuggestions, dist)
+
+	for i, sug := range candidates {
+		if sug.Tokens == nil {
+			candidates = candidates[:i]
+			break
+		}
+	}
 
 	if len(candidates) != len(expected) {
 		t.Errorf("invalid length")

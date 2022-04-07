@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"compress/gzip"
 	"encoding/gob"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -147,8 +146,10 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 	}
 
 	// var hashes []uint64
-	var hashes [][]uint64
-
+	var (
+		hashes     [][]uint64
+		totalWords int
+	)
 	unigrams := make(map[uint64]int)
 	bl := make(map[uint64]bool)
 
@@ -159,53 +160,50 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 	for scanner.Scan() {
 		var lineHashes []uint64
 		rawLine := scanner.Text()
-		splittedWords := strings.Split(rawLine, " ")
-		for _, s := range splittedWords{
+		splittedWords := strings.Fields(rawLine)
+		for _, s := range splittedWords {
 			s = strings.TrimRightFunc(s, func(r rune) bool {
 				return !unicode.IsLetter(r) && !unicode.IsNumber(r)
 			})
 			word := strings.ToLower(s)
 			lineHashes = append(lineHashes, hashString(word))
+
+			totalWords++
 			unigrams[lineHashes[len(lineHashes)-1]]++
 			if len([]rune(word)) < o.MinWord {
 				bl[lineHashes[len(lineHashes)-1]] = true
 			}
 		}
 		hashes = append(hashes, lineHashes)
-
 	}
 
 	// attempt to reduce memory allocation
 	hashes = hashes[:len(hashes):len(hashes)]
-	log.Println("time load tokens", time.Since(t), len(hashes))
+	log.Println("time load tokens", time.Since(t), totalWords)
 	t = time.Now()
-
-	// free memory
-	runtime.GC()
 
 	err := scanner.Err()
 	if err != nil {
 		return err
 	}
-	var countWords int
-	for _, v := range hashes {
-		countWords += len(v)
-	}
-	fmt.Println(countWords)
-	o.Trie = newWordTrie(countWords)
+
+	// free memory
+	runtime.GC()
+
+	o.Trie = newWordTrie(totalWords)
 
 	// counting unigrams probs
 	for k, v := range unigrams {
 		if v < o.MinFreq {
 			bl[k] = true
 		} else {
-			o.UniGramProbs[k] = float64(v) / float64(len(hashes))
+			o.UniGramProbs[k] = float64(v) / float64(totalWords)
 		}
 	}
 
 	// counting N-grams probs and store them in trie
-	for _, h := range hashes {
-		for i := 1; i < 4; i++ {
+	for i := 1; i < 4; i++ {
+		for _, h := range hashes {
 			grams := ngrams(h, i)
 			for _ngram := range grams {
 				add := true
