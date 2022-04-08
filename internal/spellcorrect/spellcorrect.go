@@ -2,7 +2,6 @@ package spellcorrect
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"log"
 	"math"
@@ -193,10 +192,10 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 		// suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
 		if len(suggestions) == 0 {
 			o.spell.MaxEditDistance = 3
-			// suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
-			// if len(suggestions) == 0 {
-			suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
-			// }
+			suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
+			if len(suggestions) == 0 {
+				suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
+			}
 		}
 		// }
 		// }
@@ -545,14 +544,14 @@ func (o *SpellCorrector) score(tokens []string, dist map[string]float64) float64
 
 	var score float64
 
-	if len(tokens) > 2 {
-		if tokens[0] == "орел" && tokens[1] == "заправляет" && tokens[2] == "крылья" {
-			fmt.Println(score)
-		}
-		if tokens[0] == "орел" && tokens[1] == "расправляет" && tokens[2] == "крылья" {
-			fmt.Println(score)
-		}
-	}
+	// if len(tokens) > 2 {
+	// 	if tokens[0] == "орел" && tokens[1] == "заправляет" && tokens[2] == "крылья" {
+	// 		fmt.Println(score)
+	// 	}
+	// 	if tokens[0] == "орел" && tokens[1] == "расправляет" && tokens[2] == "крылья" {
+	// 		fmt.Println(score)
+	// 	}
+	// }
 
 	for i := range ngrams {
 		switch len(ngrams[i]) {
