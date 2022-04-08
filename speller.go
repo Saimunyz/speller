@@ -144,7 +144,7 @@ func (s *Speller) SpellCorrect2(query string) string {
 	shortWords := make(map[int]string) // saves index and short words
 	longWords := make([]string, 0, len(spltQuery))
 	for i, word := range spltQuery {
-		if len([]rune(word)) < 4 {
+		if len([]rune(word)) < s.cfg.SpellerConfig.MinWordLength {
 			shortWords[i] = word
 			continue
 		}
