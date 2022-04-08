@@ -175,7 +175,7 @@ func (s *Speller) SpellCorrect2(query string) string {
 	}
 
 	// returns the most likely option
-	return result
+	return strings.TrimSpace(result)
 }
 
 //SpellCorrect - corrects all typos in a given query
