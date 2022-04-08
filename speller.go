@@ -151,16 +151,8 @@ func (s *Speller) SpellCorrect2(query string) string {
 		longWords = append(longWords, word)
 	}
 	for key, value := range shortWords {
-		shortWords[key] = s.spellcorrector.SpellCorrect(value)[0].Tokens[0]
+		shortWords[key] = s.spellcorrector.SpellCorrectWithoutContext(value)[0]
 	}
-	// var i int
-	// for ; i < len(longWords)-3; i += 3 {
-	// 	suggestion := s.spellcorrector.SpellCorrect(strings.Join(longWords[i:i+3], " "))[0].Tokens
-
-	// 	suggestions = append(suggestions, suggestion...)
-	// }
-	// suggestion := s.spellcorrector.SpellCorrect(strings.Join(longWords[i:], " "))[0].Tokens[0]
-	// suggestions = append(suggestions, strings.Split(suggestion, " ")...)
 
 	queries := s.splitByWords(strings.Join(longWords, " "), 3)
 	for _, query := range queries {

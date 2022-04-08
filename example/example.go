@@ -13,7 +13,7 @@ func main() {
 	// create speller
 	speller := speller.NewSpeller("config.yaml")
 
-	// load modelы
+	// load model
 	err := speller.LoadModel("models/AllRu-model.gz")
 	if err != nil {
 		fmt.Printf("No such file: %v\n", err)
@@ -58,8 +58,8 @@ func main() {
 	correct = speller.SpellCorrect2("чемодан дородный")
 	fmt.Println("чемодан дородный ->", correct)
 
-	correct = speller.SpellCorrect2("амоскитная асетка йна впрогулочную акляску")
-	fmt.Println("амоскитная асетка йна впрогулочную акляску ->", correct)
+	correct = speller.SpellCorrect2("амоскитная асетка на впрогулочную акляску")
+	fmt.Println("амоскитная асетка на впрогулочную акляску ->", correct)
 
 	correct = speller.SpellCorrect2("брпття сьругацеие ьпудно бытб юоглм")
 	fmt.Println("брпття сьругацеие ьпудно бытб юоглм ->", correct)

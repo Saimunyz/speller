@@ -348,6 +348,17 @@ func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
 	return items
 }
 
+func (o *SpellCorrector) SpellCorrectWithoutContext(s string) []string {
+	var result []string
+
+	allSuggestions, _ := o.lookupTokens([]string{s})
+	for i := range allSuggestions {
+		result = append(result, allSuggestions[i]...)
+	}
+
+	return result
+}
+
 // getPenalty - returns penalty as a percentage of the
 // obtained probability for the distance of the word
 func getPenalty(prob float64, dist float64) float64 {
