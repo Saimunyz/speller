@@ -87,6 +87,10 @@ func (s *Speller) Train() {
 }
 
 func (s *Speller) splitByWords(line string, amountOfWords int) []string {
+	if len(line) < 1 {
+		return []string{}
+	}
+
 	words := strings.Fields(line)
 	if len(words) <= amountOfWords {
 		return []string{line}
@@ -112,6 +116,9 @@ func (s *Speller) splitByWords(line string, amountOfWords int) []string {
 }
 
 func (o *Speller) joinByWords(lines []string, splitedByWords int) string {
+	if len(lines) < 1 {
+		return ""
+	}
 	words := strings.Fields(lines[0])
 	if len(words) < splitedByWords {
 		return lines[0]

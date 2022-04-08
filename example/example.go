@@ -11,10 +11,10 @@ import (
 func main() {
 	fmt.Println("Example of usage")
 	// create speller
-	speller := speller.NewSpeller("config.yaml")
+	speller := speller.NewSpeller("../config.yaml")
 
 	// load model
-	err := speller.LoadModel("models/AllRu-model.gz")
+	err := speller.LoadModel("../models/AllRu-model.gz")
 	if err != nil {
 		fmt.Printf("No such file: %v\n", err)
 		//panic(err)
@@ -31,6 +31,9 @@ func main() {
 	// correct typos
 	correct := speller.SpellCorrect2("канканцелярский")
 	fmt.Println("канканцелярский ->", correct)
+
+	correct = speller.SpellCorrect2("кот два е изд доп")
+	fmt.Println("кот два е изд доп ->", correct)
 
 	correct = speller.SpellCorrect2("Желтая скатерть")
 	fmt.Println("Желтая скатерть ->", correct)
@@ -87,6 +90,9 @@ func main() {
 
 	correct = speller.SpellCorrect2("коем длч куттеулы")
 	fmt.Println("коем длч куттеулы ->", correct)
+
+	correct = speller.SpellCorrect2("цаоь фндрр оркл рачправлфет крыоьч")
+	fmt.Println("цаоь фндрр оркл рачправлфет крыоьч ->", correct)
 
 	correct = speller.SpellCorrect2("подмтавкп под пучкт кпаснок аеднрко")
 	fmt.Println("подмтавкп под пучкт кпаснок аеднрко ->", correct)
