@@ -166,13 +166,15 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 				return !unicode.IsLetter(r) && !unicode.IsNumber(r)
 			})
 			word := strings.ToLower(s)
-			lineHashes = append(lineHashes, hashString(word))
 
 			totalWords++
-			unigrams[lineHashes[len(lineHashes)-1]]++
+
 			if len([]rune(word)) < o.MinWord {
-				bl[lineHashes[len(lineHashes)-1]] = true
+				// bl[lineHashes[len(lineHashes)-1]] = true
+				continue
 			}
+			lineHashes = append(lineHashes, hashString(word))
+			unigrams[lineHashes[len(lineHashes)-1]]++
 		}
 		hashes = append(hashes, lineHashes)
 	}

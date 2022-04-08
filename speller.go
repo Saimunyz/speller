@@ -135,6 +135,57 @@ func (o *Speller) joinByWords(lines []string, splitedByWords int) string {
 	return strings.TrimSpace(query.String())
 }
 
+func (s *Speller) SpellCorrect2(query string) string {
+	if len(query) < 1 {
+		return query
+	}
+	var suggestions []string
+	spltQuery := strings.Fields(query)
+	shortWords := make(map[int]string) // saves index and short words
+	longWords := make([]string, 0, len(spltQuery))
+	for i, word := range spltQuery {
+		if len([]rune(word)) < 4 {
+			shortWords[i] = word
+			continue
+		}
+		longWords = append(longWords, word)
+	}
+	for key, value := range shortWords {
+		shortWords[key] = s.spellcorrector.SpellCorrect(value)[0].Tokens[0]
+	}
+	// var i int
+	// for ; i < len(longWords)-3; i += 3 {
+	// 	suggestion := s.spellcorrector.SpellCorrect(strings.Join(longWords[i:i+3], " "))[0].Tokens
+
+	// 	suggestions = append(suggestions, suggestion...)
+	// }
+	// suggestion := s.spellcorrector.SpellCorrect(strings.Join(longWords[i:], " "))[0].Tokens[0]
+	// suggestions = append(suggestions, strings.Split(suggestion, " ")...)
+
+	queries := s.splitByWords(strings.Join(longWords, " "), 3)
+	for _, query := range queries {
+		suggestion := s.spellcorrector.SpellCorrect(query)
+		suggestions = append(suggestions, strings.Join(suggestion[0].Tokens, " "))
+	}
+
+	joined := s.joinByWords(suggestions, 3)
+	words := strings.Fields(joined)
+
+	var extInd int
+	var result string
+	for j := range spltQuery {
+		if word, ok := shortWords[j]; ok {
+			result = strings.Join([]string{result, word}, " ")
+			continue
+		}
+		result = strings.Join([]string{result, words[extInd]}, " ")
+		extInd++
+	}
+
+	// returns the most likely option
+	return result
+}
+
 //SpellCorrect - corrects all typos in a given query
 func (s *Speller) SpellCorrect(query string) string {
 	if len(query) < 1 {

@@ -534,10 +534,10 @@ func (o *SpellCorrector) score(tokens []string, dist map[string]float64) float64
 	var score float64
 
 	// if len(tokens) > 2 {
-	// 	if tokens[0] == "в" && tokens[1] == "виде" && tokens[2] == "косы" {
+	// 	if tokens[0] == "волос" && tokens[1] == "виде" && tokens[2] == "косы" {
 	// 		fmt.Println(score)
 	// 	}
-	// 	if tokens[0] == "в" && tokens[1] == "виде" && tokens[2] == "кота" {
+	// 	if tokens[0] == "волос" && tokens[1] == "вида" && tokens[2] == "кожи" {
 	// 		fmt.Println(score)
 	// 	}
 	// }

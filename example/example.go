@@ -29,65 +29,65 @@ func main() {
 	// }
 
 	// correct typos
-	correct := speller.SpellCorrect("канканцелярский")
+	correct := speller.SpellCorrect2("канканцелярский")
 	fmt.Println("канканцелярский ->", correct)
 
-	correct = speller.SpellCorrect("Желтая скатерть")
+	correct = speller.SpellCorrect2("Желтая скатерть")
 	fmt.Println("Желтая скатерть ->", correct)
 
-	correct = speller.SpellCorrect("желиая скаткрть")
+	correct = speller.SpellCorrect2("желиая скаткрть")
 	fmt.Println("желиая скаткрть ->", correct)
 
-	correct = speller.SpellCorrect("томат дородгый")
+	correct = speller.SpellCorrect2("томат дородгый")
 	fmt.Println("томат дородгый ->", correct)
-	correct = speller.SpellCorrect("органайзер дородгый")
+	correct = speller.SpellCorrect2("органайзер дородгый")
 	fmt.Println("органайзер дородгый ->", correct)
 
-	correct = speller.SpellCorrect("томат дородный")
+	correct = speller.SpellCorrect2("томат дородный")
 	fmt.Println("томат дородный ->", correct)
 
-	correct = speller.SpellCorrect("органайзер дорожный")
+	correct = speller.SpellCorrect2("органайзер дорожный")
 	fmt.Println("органайзер дорожный ->", correct)
 
-	correct = speller.SpellCorrect("томат дорожный")
+	correct = speller.SpellCorrect2("томат дорожный")
 	fmt.Println("томат дорожный ->", correct)
 
-	correct = speller.SpellCorrect("органайзер дородный")
+	correct = speller.SpellCorrect2("органайзер дородный")
 	fmt.Println("органайзер дородный ->", correct)
 
-	correct = speller.SpellCorrect("чемодан дородный")
+	correct = speller.SpellCorrect2("чемодан дородный")
 	fmt.Println("чемодан дородный ->", correct)
 
-	correct = speller.SpellCorrect("амоскитная асетка йна впрогулочную акляску")
+	correct = speller.SpellCorrect2("амоскитная асетка йна впрогулочную акляску")
 	fmt.Println("амоскитная асетка йна впрогулочную акляску ->", correct)
 
-	correct = speller.SpellCorrect("брпття сьругацеие ьпудно бытб юоглм")
+	correct = speller.SpellCorrect2("брпття сьругацеие ьпудно бытб юоглм")
 	fmt.Println("брпття сьругацеие ьпудно бытб юоглм ->", correct)
 
-	correct = speller.SpellCorrect("блузув женчквя серебоистаф")
+	correct = speller.SpellCorrect2("блузув женчквя серебоистаф")
 	fmt.Println("блузув женчквя серебоистаф ->", correct)
 
-	correct = speller.SpellCorrect("обрдрк из воолс в видк кочы")
+	correct = speller.SpellCorrect2("обрдрк из воолс в видк кочы")
 	fmt.Println("обрдрк из воолс в видк кочы ->", correct)
 
-	correct = speller.SpellCorrect("разршревающее иаслр доя мпчсажа")
+	correct = speller.SpellCorrect2("разршревающее иаслр доя мпчсажа")
 	fmt.Println("разршревающее иаслр доя мпчсажа ->", correct)
 
-	correct = speller.SpellCorrect("шиииер ддя воолс")
+	correct = speller.SpellCorrect2("шиииер ддя воолс")
 	fmt.Println("шиииер ддя воолс ->", correct)
 
-	correct = speller.SpellCorrect("раниц жля еачальнфх клвсмов")
+	correct = speller.SpellCorrect2("раниц жля еачальнфх клвсмов")
 	fmt.Println("ранец жля еачальнфх клвсмов ->", correct)
 
-	correct = speller.SpellCorrect("винеи пуз")
+	correct = speller.SpellCorrect2("винеи пуз")
 	fmt.Println("винеи пуз ->", correct)
 
-	correct = speller.SpellCorrect("емеость ддя мцсора бкз крфшки")
+	correct = speller.SpellCorrect2("емеость ддя мцсора бкз крфшки")
 	fmt.Println("емеость ддя мцсора бкз крфшки ->", correct)
 
-	correct = speller.SpellCorrect("коем длч куттеулы")
+	correct = speller.SpellCorrect2("коем длч куттеулы")
 	fmt.Println("коем длч куттеулы ->", correct)
 
-	correct = speller.SpellCorrect("гпбор для спеуиф родсрлнухи есеости")
-	fmt.Println("гпбор для спеуиф родсрлнухи есеости ->", correct)
+	correct = speller.SpellCorrect2("подмтавкп под пучкт кпаснок аеднрко")
+	fmt.Println("подмтавкп под пучкт кпаснок аеднрко ->", correct)
 }
