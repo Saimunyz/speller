@@ -351,6 +351,10 @@ func (o *SpellCorrector) SpellCorrectWithoutContext(s string) []string {
 	}
 
 	suggestions, _ := o.spell.Lookup(s, spell.SuggestionLevel(spell.LevelClosest))
+	if len(suggestions) == 0 {
+		return []string{s}
+	}
+
 	result := make([]string, len(suggestions))
 
 	for i := range result {
