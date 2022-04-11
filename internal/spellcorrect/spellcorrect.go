@@ -204,7 +204,7 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 
 		// if no words == token gets 20 first suggestions
 		if len(allSuggestions[i]) == 0 {
-			for j := 0; j < len(suggestions) && j < 20; j++ {
+			for j := 0; j < len(suggestions) && j < 10; j++ {
 				allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
 				dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)*o.penalty
 			}
@@ -376,7 +376,7 @@ func getPenalty(prob float64, dist float64) float64 {
 	}
 
 	// change space from 0 - 20 to 2 - 10
-	relative := (dist - 0) / (20 - 0)
+	relative := (dist - 0) / (10 - 0)
 	scaled_value := 1 + (10-1)*relative
 
 	alpha = math.Log10(scaled_value) * 100
