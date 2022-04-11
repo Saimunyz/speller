@@ -308,7 +308,11 @@ func hashString(s string) uint64 {
 
 // TokenNgrams - returns ngrams from tokens
 func TokenNgrams(words []string, size int) [][]string {
-	var out [][]string
+	outCap := len(words) - (size - 1)
+	if outCap < 0 {
+		outCap = 0
+	}
+	out := make([][]string, 0, outCap)
 	for i := 0; i+size <= len(words); i++ {
 		out = append(out, words[i:i+size:i+size])
 	}

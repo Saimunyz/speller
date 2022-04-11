@@ -145,15 +145,17 @@ func hashTokens(tokens []string) uint64 {
 func product(a []string, b []string) []string {
 	size := len(a) * len(b)
 	items := make([]string, 0, size)
+	newStr := strings.Builder{}
 	for i := range a {
 		for j := range b {
-			newStr := strings.Builder{}
 			newStr.Grow(len(a[i]) + len(b[j]) + 1)
 			newStr.WriteString(a[i])
 			newStr.WriteString(" ")
 			newStr.WriteString(b[j])
 
 			items = append(items, newStr.String())
+
+			newStr.Reset()
 		}
 	}
 	return items
@@ -200,11 +202,6 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 		// }
 		// }
 
-		// if word in dict then not changing it
-		// if len(suggestions) > 0 && suggestions[0].Distance == int(spell.LevelBest) {
-		// 	allSuggestions[i] = append(allSuggestions[i], suggestions[0].Word)
-		// }
-
 		// if no words == token gets 20 first suggestions
 		if len(allSuggestions[i]) == 0 {
 			for j := 0; j < len(suggestions) && j < 20; j++ {
@@ -231,7 +228,7 @@ func getInsertPosition(nums []Suggestion, target Suggestion) int {
 		mid := min + (max-min)/2
 		// temporarily
 		if nums[mid].score == 0 {
-			nums[mid].score = -1
+			nums[mid].score = math.Inf(-1)
 		}
 
 		switch {
@@ -349,11 +346,15 @@ func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
 }
 
 func (o *SpellCorrector) SpellCorrectWithoutContext(s string) []string {
-	var result []string
+	if len([]rune(s)) < 3 {
+		return []string{s}
+	}
 
-	allSuggestions, _ := o.lookupTokens([]string{s})
-	for i := range allSuggestions {
-		result = append(result, allSuggestions[i]...)
+	suggestions, _ := o.spell.Lookup(s, spell.SuggestionLevel(spell.LevelClosest))
+	result := make([]string, len(suggestions))
+
+	for i := range result {
+		result[i] = suggestions[i].Word
 	}
 
 	return result
@@ -424,7 +425,7 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]f
 
 	// penalty := len(bigrams)
 	for i := range bigrams {
-		bigram := o.GetBigram(bigrams[i])
+		bigram := o.frequencies.Get(bigrams[i])
 		if bigram != 0 {
 			biLog = math.Log(bigram)
 			biLog -= getPenalty(biLog, dist[bigrams[i][0]]+dist[bigrams[i][1]])
@@ -457,7 +458,7 @@ func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]
 	penalty := len(unigrams)
 
 	for i := range unigrams {
-		unigram := o.GetUnigram(unigrams[i])
+		unigram := o.frequencies.Get(unigrams[i])
 		if unigram != 0 {
 			penalty--
 			uniLog = math.Log(unigram)
@@ -486,7 +487,7 @@ func (o *SpellCorrector) calculateTrigramScore(ngrams []string, dist map[string]
 	trigrams := TokenNgrams(ngrams, 3)
 
 	for i := range trigrams {
-		trigram := o.GetTrigram(trigrams[i])
+		trigram := o.frequencies.Get(trigrams[i])
 		if trigram != 0 {
 			triLog = math.Log(trigram)
 			triLog -= getPenalty(triLog, dist[trigrams[i][0]]+dist[trigrams[i][1]]+dist[trigrams[i][2]])
@@ -563,8 +564,11 @@ func (o *SpellCorrector) score(tokens []string, dist map[string]float64) float64
 			score += o.calculateTrigramScore(ngrams[i], dist)
 		}
 	}
-	if score != 0 {
-		score = math.Exp(score)
+	// if score != 0 {
+	// 	score = math.Exp(score)
+	// }
+	if score == 0 {
+		score = math.Inf(-1)
 	}
 	return score
 }
