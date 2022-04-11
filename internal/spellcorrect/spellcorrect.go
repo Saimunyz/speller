@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/eskriett/spell"
 	"github.com/segmentio/fasthash/fnv1a"
@@ -23,10 +22,11 @@ type Suggestion struct {
 // FrequencyContainer - all the necessary functions for working with the frequency layer
 type FrequencyContainer interface {
 	TrainNgrams(in io.Reader) error
-	Get(tokens []string) float64
+	GetUnigramProb(tokens string) float64
+	GetTrigramProb(tokens string) float64
+	GetBigramProb(tokens string) float64
 	LoadModel(filename string) error
 	SaveModel(filename string) error
-	TrainNgramsOnline(tokens []string) error
 }
 
 // Tokinizer - tokenizer function from token layer
@@ -293,60 +293,11 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string, dist
 	return suggestions
 }
 
-func (o *SpellCorrector) addWordToModel(newWords chan string) {
-	for query := range newWords {
-		var tokens []string
-
-		words := strings.Fields(query)
-		for _, word := range words {
-			if len([]rune(word)) < 2 {
-				continue
-			}
-			word = strings.TrimRightFunc(word, func(r rune) bool {
-				return !unicode.IsLetter(r) && !unicode.IsNumber(r)
-			})
-			word = strings.ToLower(word)
-			tokens = append(tokens, word)
-
-			// update spell library
-			entry, err := o.spell.GetEntry(word)
-			if err != nil || entry == nil {
-				// add new entry
-				o.spell.AddEntry(spell.Entry{
-					Frequency: 1,
-					Word:      word,
-				})
-				continue
-			}
-			o.spell.AddEntry(spell.Entry{
-				Frequency: entry.Frequency + 1,
-				Word:      entry.Word,
-			})
-		}
-		o.frequencies.TrainNgramsOnline(tokens)
-	}
-}
-
 // SpellCorrect - returns suggestions
 func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
-	// new words for model improvments
-	newWords := make(chan string)
-	if o.autoTrainMode {
-		go o.addWordToModel(newWords)
-	}
-
 	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
 	allSuggestions, dist := o.lookupTokens(tokens)
 	items := o.getSuggestionCandidates(allSuggestions, dist)
-
-	// sending data to model improvments
-	if o.autoTrainMode {
-		go func() {
-			sugges := strings.Join(items[0].Tokens, " ")
-			newWords <- sugges
-			newWords <- s
-		}()
-	}
 
 	return items
 }
@@ -394,27 +345,27 @@ func getPenalty(prob float64, dist float64) float64 {
 
 // GetUnigram - returns unigram with penalties
 func (o *SpellCorrector) GetUnigram(tokens []string) float64 {
-	unigrams := TokenNgrams(tokens, 1)
+	unigrams := Ngrams(tokens, 1)
 
-	prob := o.frequencies.Get(unigrams[0])
+	prob := o.frequencies.GetUnigramProb(unigrams[0])
 
 	return prob
 }
 
 // GetBigram - returns bigrams
 func (o *SpellCorrector) GetBigram(tokens []string) float64 {
-	bigrams := TokenNgrams(tokens, 2)
+	bigrams := Ngrams(tokens, 2)
 
-	prob := o.frequencies.Get(bigrams[0])
+	prob := o.frequencies.GetBigramProb(bigrams[0])
 
 	return prob
 }
 
 // GetTrigram - returns trigrams
 func (o *SpellCorrector) GetTrigram(tokens []string) float64 {
-	trigrams := TokenNgrams(tokens, 3)
+	trigrams := Ngrams(tokens, 3)
 
-	prob := o.frequencies.Get(trigrams[0])
+	prob := o.frequencies.GetTrigramProb(trigrams[0])
 
 	return prob
 }
@@ -431,7 +382,7 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]f
 
 	// penalty := len(bigrams)
 	for i := range bigrams {
-		bigram := o.frequencies.Get(bigrams[i])
+		bigram := o.GetBigram(bigrams[i])
 		if bigram != 0 {
 			biLog = math.Log(bigram)
 			biLog -= getPenalty(biLog, dist[bigrams[i][0]]+dist[bigrams[i][1]])
@@ -464,7 +415,7 @@ func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]
 	penalty := len(unigrams)
 
 	for i := range unigrams {
-		unigram := o.frequencies.Get(unigrams[i])
+		unigram := o.GetUnigram(unigrams[i])
 		if unigram != 0 {
 			penalty--
 			uniLog = math.Log(unigram)
@@ -493,7 +444,7 @@ func (o *SpellCorrector) calculateTrigramScore(ngrams []string, dist map[string]
 	trigrams := TokenNgrams(ngrams, 3)
 
 	for i := range trigrams {
-		trigram := o.frequencies.Get(trigrams[i])
+		trigram := o.GetTrigram(trigrams[i])
 		if trigram != 0 {
 			triLog = math.Log(trigram)
 			triLog -= getPenalty(triLog, dist[trigrams[i][0]]+dist[trigrams[i][1]]+dist[trigrams[i][2]])

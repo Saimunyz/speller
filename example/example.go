@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 
-	_ "net/http/pprof"
-
 	"github.com/Saimunyz/speller"
 )
 
@@ -27,6 +25,11 @@ func main() {
 	// 	fmt.Printf("No such file: %v\n", err)
 	// 	//panic(err)
 	// }
+
+	// cpu, _ := os.Create("cpu.pprof")
+	// defer cpu.Close()
+	// pprof.StartCPUProfile(cpu)
+	// defer pprof.StopCPUProfile()
 
 	// correct typos
 	correct := speller.SpellCorrect2("канканцелярский")
@@ -96,4 +99,8 @@ func main() {
 
 	correct = speller.SpellCorrect2("подмтавкп под пучкт кпаснок аеднрко")
 	fmt.Println("подмтавкп под пучкт кпаснок аеднрко ->", correct)
+
+	// mem, _ := os.Create("mem.pprof")
+	// defer mem.Close()
+	// pprof.WriteHeapProfile(mem)
 }

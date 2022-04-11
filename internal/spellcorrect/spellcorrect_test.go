@@ -26,7 +26,7 @@ func TestTrain(t *testing.T) {
 		t.Errorf(err.Error())
 		return
 	}
-	if prob := sc.frequencies.Get([]string{"golang"}); prob > 0.34 && prob < 0.33 {
+	if prob := sc.frequencies.GetUnigramProb("golang"); prob > 0.34 && prob < 0.33 {
 		t.Errorf("invalid prob %f", prob)
 		return
 	}
