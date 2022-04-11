@@ -226,15 +226,11 @@ func getInsertPosition(nums []Suggestion, target Suggestion) int {
 	max := len(nums) - 1
 	for min <= max {
 		mid := min + (max-min)/2
-		// temporarily
-		if nums[mid].score == 0 {
-			nums[mid].score = math.Inf(-1)
-		}
 
 		switch {
-		case target.score == nums[mid].score:
-			return mid
-		case target.score > nums[mid].score:
+		// case target.score == nums[mid].score:
+		// 	return mid
+		case target.score >= nums[mid].score:
 			max = mid - 1
 		case target.score < nums[mid].score:
 			min = mid + 1
@@ -264,12 +260,22 @@ func insertPosition(suggesses []Suggestion, pos int, sugges Suggestion) {
 	suggesses[pos] = sugges
 }
 
+func newSuggestions() []Suggestion {
+	suggestions := make([]Suggestion, 10)
+
+	for i := range suggestions {
+		suggestions[i].score = math.Inf(-1)
+	}
+
+	return suggestions
+}
+
 // getSuggestionCandidates - returns slice of fixed typos with context N-grams
 func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string, dist map[string]float64) []Suggestion {
 	// combine suggestions
 	suggestionStrings := combos(allSuggestions)
 	seen := make(map[uint64]struct{}, len(suggestionStrings))
-	suggestions := make([]Suggestion, 10)
+	suggestions := newSuggestions()
 	for i := range suggestionStrings {
 		sugTokens := strings.Split(suggestionStrings[i], " ")
 		h := hashTokens(sugTokens)
@@ -351,10 +357,6 @@ func (o *SpellCorrector) SpellCorrectWithoutContext(s string) []string {
 	}
 
 	suggestions, _ := o.spell.Lookup(s, spell.SuggestionLevel(spell.LevelClosest))
-	if len(suggestions) == 0 {
-		return []string{s}
-	}
-
 	result := make([]string, len(suggestions))
 
 	for i := range result {
