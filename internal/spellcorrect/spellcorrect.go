@@ -527,15 +527,35 @@ func (o *SpellCorrector) score(tokens []string, dist map[string]float64) float64
 	// 	score += o.weights[i-1] * sum1
 	// }
 
-	ngrams := TokenNgrams(tokens, 3)
-	if len(ngrams) == 0 {
-		ngrams = TokenNgrams(tokens, 2)
-		if len(ngrams) == 0 {
-			ngrams = TokenNgrams(tokens, 1)
+	var score float64
+
+	switch {
+	case len(tokens) == 1:
+		ngrams := TokenNgrams(tokens, 1)
+		for i := range ngrams {
+			score += o.calculateUnigramScore(ngrams[i], dist)
+		}
+	case len(tokens) == 2:
+		ngrams := TokenNgrams(tokens, 2)
+
+		for i := range ngrams {
+			score += o.calculateBigramScore(ngrams[i], dist)
+		}
+	case len(tokens) >= 3:
+		ngrams := TokenNgrams(tokens, 3)
+
+		for i := range ngrams {
+			score += o.calculateTrigramScore(ngrams[i], dist)
 		}
 	}
 
-	var score float64
+	// ngrams := TokenNgrams(tokens, 3)
+	// if len(ngrams) == 0 {
+	// 	ngrams = TokenNgrams(tokens, 2)
+	// 	if len(ngrams) == 0 {
+	// 		ngrams = TokenNgrams(tokens, 1)
+	// 	}
+	// }
 
 	// if len(tokens) > 2 {
 	// 	if tokens[0] == "орел" && tokens[1] == "заправляет" && tokens[2] == "крылья" {
@@ -546,16 +566,16 @@ func (o *SpellCorrector) score(tokens []string, dist map[string]float64) float64
 	// 	}
 	// }
 
-	for i := range ngrams {
-		switch len(ngrams[i]) {
-		case 1:
-			score += o.calculateUnigramScore(ngrams[i], dist)
-		case 2:
-			score += o.calculateBigramScore(ngrams[i], dist)
-		case 3:
-			score += o.calculateTrigramScore(ngrams[i], dist)
-		}
-	}
+	// for i := range ngrams {
+	// 	switch len(ngrams[i]) {
+	// 	case 1:
+	// 		score += o.calculateUnigramScore(ngrams[i], dist)
+	// 	case 2:
+	// 		score += o.calculateBigramScore(ngrams[i], dist)
+	// 	case 3:
+	// 		score += o.calculateTrigramScore(ngrams[i], dist)
+	// 	}
+	// }
 	// if score != 0 {
 	// 	score = math.Exp(score)
 	// }
