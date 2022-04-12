@@ -1,9 +1,10 @@
 speller_config:
-  sentences_path: ../datasets/bestContext/sentences.txt.gz
-  dict_path: ../datasets/bestContext/freq-dict.txt.gz
-  min_word_freq: 1
-  min_word_length: 1
-  unigram_weight: 3
+  sentences_path: datasets/ru/AllRu-sentences.txt.gz
+  dict_path: datasets/ru/AllRu-freq-dict.txt.gz
+  min_word_freq: 3
+  min_word_length: 4
+  penalty: 1.5
+  unigram_weight: 1
   bigram_weight: 5
-  trigram_weight: 2
+  trigram_weight: 4
   auto_train_mode: false
