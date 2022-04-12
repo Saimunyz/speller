@@ -273,8 +273,8 @@ func (o *Frequencies) GetBigramProb(word string) float64 {
 		return 0.0
 	}
 
-	words := strings.Fields(word)
-	unigramFreq := o.GetUnigramFreq(words[0])
+	idx := strings.Index(word, " ")
+	unigramFreq := o.GetUnigramFreq(word[:idx])
 	if unigramFreq == 0 {
 		return 0.0
 	}
@@ -289,8 +289,8 @@ func (o *Frequencies) GetTrigramProb(word string) float64 {
 		return 0.0
 	}
 
-	words := strings.Fields(word)
-	bigramFreq := o.GetBigramFreq(strings.Join(words[:len(words)-1], " "))
+	idx := strings.LastIndex(word, " ")
+	bigramFreq := o.GetBigramFreq(word[:idx])
 	if bigramFreq == 0 {
 		return 0.0
 	}
