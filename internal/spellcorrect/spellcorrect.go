@@ -402,11 +402,7 @@ func (o *SpellCorrector) GetTrigram(tokens []string) float64 {
 
 // calculateBigramScore - returns bigram score of a given words
 func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]float64) float64 {
-	var (
-		uniLog float64
-		biLog  float64
-		score  float64
-	)
+	var score float64
 
 	// penalty := len(bigrams)
 
@@ -415,16 +411,15 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]f
 
 		bigram := o.frequencies.Get(bigrams)
 		if bigram != 0 {
-			biLog = math.Log(bigram)
-			biLog -= getPenalty(biLog, dist[bigrams[0]]+dist[bigrams[1]])
+			bigram -= getPenalty(bigram, dist[bigrams[0]]+dist[bigrams[1]])
 
 			unigram := o.GetUnigram(bigrams)
 			if unigram != 0 {
-				uniLog = math.Log(unigram) + o.weights[0]
-				uniLog -= getPenalty(uniLog, dist[bigrams[0]])
+				unigram += o.weights[0]
+				unigram -= getPenalty(unigram, dist[bigrams[0]])
 			}
 
-			score += uniLog + biLog
+			score += unigram + bigram
 		} else {
 			tmp := o.calculateUnigramScore(bigrams, dist)
 			score += (tmp + tmp)
@@ -435,10 +430,7 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]f
 
 // calculateUnigramScore - returns unigram score of a given words
 func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]float64) float64 {
-	var (
-		uniLog float64
-		score  float64
-	)
+	var score float64
 
 	penalty := len(ngrams)
 
@@ -448,11 +440,10 @@ func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]
 		unigram := o.frequencies.Get(unigrams)
 		if unigram != 0 {
 			penalty--
-			uniLog = math.Log(unigram)
-			uniLog -= getPenalty(uniLog, dist[unigrams[0]])
+			unigram -= getPenalty(unigram, dist[unigrams[0]])
 		}
 
-		score += uniLog
+		score += unigram
 	}
 
 	if penalty > 0 {
@@ -463,38 +454,32 @@ func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]
 
 // calculateTrigramScore -  returns trigrams score of a given words
 func (o *SpellCorrector) calculateTrigramScore(ngrams []string, dist map[string]float64) float64 {
-	var (
-		uniLog float64
-		biLog  float64
-		triLog float64
-		score  float64
-	)
+	var score float64
 
 	for i := 0; i+3 <= len(ngrams); i++ {
 		trigrams := ngrams[i : i+3 : i+3]
 
 		trigram := o.frequencies.Get(trigrams)
 		if trigram != 0 {
-			triLog = math.Log(trigram)
-			triLog -= getPenalty(triLog, dist[trigrams[0]]+dist[trigrams[1]]+dist[trigrams[2]])
+			trigram -= getPenalty(trigram, dist[trigrams[0]]+dist[trigrams[1]]+dist[trigrams[2]])
 
 			bigram := o.GetBigram(trigrams)
 			if bigram != 0 {
-				biLog = math.Log(bigram) + o.weights[1]
-				biLog -= getPenalty(biLog, dist[trigrams[0]]+dist[trigrams[1]])
+				bigram += o.weights[1]
+
+				bigram -= getPenalty(bigram, dist[trigrams[0]]+dist[trigrams[1]])
 			}
 			unigram := o.GetUnigram(trigrams)
 			if unigram != 0 {
-				uniLog = math.Log(unigram) + o.weights[0]
-				uniLog -= getPenalty(uniLog, dist[trigrams[0]])
+				unigram += o.weights[0]
+				unigram -= getPenalty(unigram, dist[trigrams[0]])
 			}
 
-			score += uniLog + biLog + triLog
+			score += unigram + bigram + trigram
 		} else {
 			tmp := o.calculateBigramScore(trigrams, dist)
 			score += tmp + tmp
 		}
-
 	}
 	return score
 }
@@ -532,36 +517,6 @@ func (o *SpellCorrector) score(tokens []string, dist map[string]float64) float64
 
 	}
 
-	// ngrams := TokenNgrams(tokens, 3)
-	// if len(ngrams) == 0 {
-	// 	ngrams = TokenNgrams(tokens, 2)
-	// 	if len(ngrams) == 0 {
-	// 		ngrams = TokenNgrams(tokens, 1)
-	// 	}
-	// }
-
-	// if len(tokens) > 2 {
-	// 	if tokens[0] == "орел" && tokens[1] == "заправляет" && tokens[2] == "крылья" {
-	// 		fmt.Println(score)
-	// 	}
-	// 	if tokens[0] == "орел" && tokens[1] == "расправляет" && tokens[2] == "крылья" {
-	// 		fmt.Println(score)
-	// 	}
-	// }
-
-	// for i := range ngrams {
-	// 	switch len(ngrams[i]) {
-	// 	case 1:
-	// 		score += o.calculateUnigramScore(ngrams[i], dist)
-	// 	case 2:
-	// 		score += o.calculateBigramScore(ngrams[i], dist)
-	// 	case 3:
-	// 		score += o.calculateTrigramScore(ngrams[i], dist)
-	// 	}
-	// }
-	// if score != 0 {
-	// 	score = math.Exp(score)
-	// }
 	if score == 0 {
 		score = math.Inf(-1)
 	}
