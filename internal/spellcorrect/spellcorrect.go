@@ -145,17 +145,9 @@ func hashTokens(tokens []string) uint64 {
 func product(a []string, b []string) []string {
 	size := len(a) * len(b)
 	items := make([]string, 0, size)
-	newStr := strings.Builder{}
 	for i := range a {
 		for j := range b {
-			newStr.Grow(len(a[i]) + len(b[j]) + 1)
-			newStr.WriteString(a[i])
-			newStr.WriteString(" ")
-			newStr.WriteString(b[j])
-
-			items = append(items, newStr.String())
-
-			newStr.Reset()
+			items = append(items, a[i]+" "+b[j])
 		}
 	}
 	return items
@@ -184,12 +176,15 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 
 		// gets suggestions
 		var suggestions spell.SuggestionList
-		o.spell.MaxEditDistance = 1 
-		suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
-		if len(suggestions) < 2 {
+		o.spell.MaxEditDistance = 2
+
+		suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
+		if len(suggestions) == 0 {
+			o.spell.MaxEditDistance = 3
 			suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
 		}
-		// if no words == token gets 5 first suggestions
+
+		// gets 5 first suggestions
 		if len(allSuggestions[i]) == 0 {
 			for j := 0; j < len(suggestions) && j < 5; j++ {
 				allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
@@ -380,27 +375,27 @@ func getPenalty(prob float64, dist float64) float64 {
 
 // GetUnigram - returns unigram with penalties
 func (o *SpellCorrector) GetUnigram(tokens []string) float64 {
-	unigrams := TokenNgrams(tokens, 1)
+	unigrams := tokens[:1:1]
 
-	prob := o.frequencies.Get(unigrams[0])
+	prob := o.frequencies.Get(unigrams)
 
 	return prob
 }
 
 // GetBigram - returns bigrams
 func (o *SpellCorrector) GetBigram(tokens []string) float64 {
-	bigrams := TokenNgrams(tokens, 2)
+	bigrams := tokens[:2:2]
 
-	prob := o.frequencies.Get(bigrams[0])
+	prob := o.frequencies.Get(bigrams)
 
 	return prob
 }
 
 // GetTrigram - returns trigrams
 func (o *SpellCorrector) GetTrigram(tokens []string) float64 {
-	trigrams := TokenNgrams(tokens, 3)
+	trigrams := tokens[:3:3]
 
-	prob := o.frequencies.Get(trigrams[0])
+	prob := o.frequencies.Get(trigrams)
 
 	return prob
 }
@@ -413,28 +408,28 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]f
 		score  float64
 	)
 
-	bigrams := TokenNgrams(ngrams, 2)
-
 	// penalty := len(bigrams)
-	for i := range bigrams {
-		bigram := o.frequencies.Get(bigrams[i])
+
+	for i := 0; i+2 <= len(ngrams); i++ {
+		bigrams := ngrams[i : i+2 : i+2]
+
+		bigram := o.frequencies.Get(bigrams)
 		if bigram != 0 {
 			biLog = math.Log(bigram)
-			biLog -= getPenalty(biLog, dist[bigrams[i][0]]+dist[bigrams[i][1]])
+			biLog -= getPenalty(biLog, dist[bigrams[0]]+dist[bigrams[1]])
 
-			unigram := o.GetUnigram(bigrams[i])
+			unigram := o.GetUnigram(bigrams)
 			if unigram != 0 {
 				uniLog = math.Log(unigram) + o.weights[0]
-				uniLog -= getPenalty(uniLog, dist[bigrams[i][0]])
+				uniLog -= getPenalty(uniLog, dist[bigrams[0]])
 			}
 
 			score += uniLog + biLog
 		} else {
-			tmp := o.calculateUnigramScore(bigrams[i], dist)
+			tmp := o.calculateUnigramScore(bigrams, dist)
 			score += (tmp + tmp)
 		}
 	}
-
 	return score
 }
 
@@ -445,16 +440,16 @@ func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]
 		score  float64
 	)
 
-	unigrams := TokenNgrams(ngrams, 1)
+	penalty := len(ngrams)
 
-	penalty := len(unigrams)
+	for i := 0; i+1 <= len(ngrams); i++ {
+		unigrams := ngrams[i : i+1 : i+1]
 
-	for i := range unigrams {
-		unigram := o.frequencies.Get(unigrams[i])
+		unigram := o.frequencies.Get(unigrams)
 		if unigram != 0 {
 			penalty--
 			uniLog = math.Log(unigram)
-			uniLog -= getPenalty(uniLog, dist[unigrams[i][0]])
+			uniLog -= getPenalty(uniLog, dist[unigrams[0]])
 		}
 
 		score += uniLog
@@ -463,7 +458,6 @@ func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]
 	if penalty > 0 {
 		score = o.applyPenalty(score, penalty)
 	}
-
 	return score
 }
 
@@ -476,33 +470,32 @@ func (o *SpellCorrector) calculateTrigramScore(ngrams []string, dist map[string]
 		score  float64
 	)
 
-	trigrams := TokenNgrams(ngrams, 3)
+	for i := 0; i+3 <= len(ngrams); i++ {
+		trigrams := ngrams[i : i+3 : i+3]
 
-	for i := range trigrams {
-		trigram := o.frequencies.Get(trigrams[i])
+		trigram := o.frequencies.Get(trigrams)
 		if trigram != 0 {
 			triLog = math.Log(trigram)
-			triLog -= getPenalty(triLog, dist[trigrams[i][0]]+dist[trigrams[i][1]]+dist[trigrams[i][2]])
+			triLog -= getPenalty(triLog, dist[trigrams[0]]+dist[trigrams[1]]+dist[trigrams[2]])
 
-			bigram := o.GetBigram(trigrams[i])
+			bigram := o.GetBigram(trigrams)
 			if bigram != 0 {
 				biLog = math.Log(bigram) + o.weights[1]
-				biLog -= getPenalty(biLog, dist[trigrams[i][0]]+dist[trigrams[i][1]])
+				biLog -= getPenalty(biLog, dist[trigrams[0]]+dist[trigrams[1]])
 			}
-			unigram := o.GetUnigram(trigrams[i])
+			unigram := o.GetUnigram(trigrams)
 			if unigram != 0 {
 				uniLog = math.Log(unigram) + o.weights[0]
-				uniLog -= getPenalty(uniLog, dist[trigrams[i][0]])
+				uniLog -= getPenalty(uniLog, dist[trigrams[0]])
 			}
 
 			score += uniLog + biLog + triLog
 		} else {
-			tmp := o.calculateBigramScore(trigrams[i], dist)
+			tmp := o.calculateBigramScore(trigrams, dist)
 			score += tmp + tmp
 		}
 
 	}
-
 	return score
 }
 
@@ -531,22 +524,12 @@ func (o *SpellCorrector) score(tokens []string, dist map[string]float64) float64
 
 	switch {
 	case len(tokens) == 1:
-		ngrams := TokenNgrams(tokens, 1)
-		for i := range ngrams {
-			score += o.calculateUnigramScore(ngrams[i], dist)
-		}
+		score += o.calculateUnigramScore(tokens, dist)
 	case len(tokens) == 2:
-		ngrams := TokenNgrams(tokens, 2)
-
-		for i := range ngrams {
-			score += o.calculateBigramScore(ngrams[i], dist)
-		}
+		score += o.calculateBigramScore(tokens, dist)
 	case len(tokens) >= 3:
-		ngrams := TokenNgrams(tokens, 3)
+		score += o.calculateTrigramScore(tokens, dist)
 
-		for i := range ngrams {
-			score += o.calculateTrigramScore(ngrams[i], dist)
-		}
 	}
 
 	// ngrams := TokenNgrams(tokens, 3)

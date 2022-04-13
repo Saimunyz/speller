@@ -312,9 +312,10 @@ func TokenNgrams(words []string, size int) [][]string {
 	if outCap < 0 {
 		outCap = 0
 	}
-	out := make([][]string, 0, outCap)
-	for i := 0; i+size <= len(words); i++ {
-		out = append(out, words[i:i+size:i+size])
+	out := make([][]string, outCap)
+	for i, j := 0, 0; i+size <= len(words); i++ {
+		out[j] = words[i : i+size : i+size]
+		j++
 	}
 	return out
 }

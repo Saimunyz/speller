@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	_ "net/http/pprof"
 
@@ -27,6 +28,8 @@ func main() {
 	// 	fmt.Printf("No such file: %v\n", err)
 	// 	//panic(err)
 	// }
+
+	now := time.Now()
 
 	// correct typos
 	correct := speller.SpellCorrect2("канканцелярский")
@@ -96,4 +99,6 @@ func main() {
 
 	correct = speller.SpellCorrect2("подмтавкп под пучкт кпаснок аеднрко")
 	fmt.Println("подмтавкп под пучкт кпаснок аеднрко ->", correct)
+
+	fmt.Println(time.Since(now))
 }
