@@ -162,6 +162,7 @@ func hashTokens(tokens []string) uint64 {
 // 	return tmpP
 // }
 
+// product - computes product() of given slice
 func product(a []string, b [][]string) [][]string {
 	size := len(a) * len(b)
 	items := make([][]string, size)
@@ -185,6 +186,7 @@ func product(a []string, b [][]string) [][]string {
 	return items
 }
 
+// sliceToSliceOfSlice - change slice to slice of slice
 func sliceToSliceOfSlice(words []string) [][]string {
 	res := make([][]string, len(words))
 	for i := range res {
@@ -402,9 +404,10 @@ func getPenalty(prob float64, dist float64) float64 {
 
 	// change space from 0 - 5 to 1 - 10
 	relative := (dist - 0) / (5 - 0)
-	scaled_value := 1 + (10-1)*relative
+	// scaled_value := 1 + (10-1)*relative
+	alpha = 0 + (100-0)*relative
 
-	alpha = math.Log10(scaled_value) * 100
+	// alpha = math.Log10(scaled_value) * 100
 
 	// if alpha >= 100. {
 	// 	alpha = 99.
