@@ -141,21 +141,63 @@ func hashTokens(tokens []string) uint64 {
 	return h
 }
 
-// product - computes product() of given slice
-func product(a []string, b []string) []string {
+// // product - computes product() of given slice
+// func product(a []string, b []string) []string {
+// 	size := len(a) * len(b)
+// 	items := make([]string, 0, size)
+// 	for i := range a {
+// 		for j := range b {
+// 			items = append(items, a[i]+" "+b[j])
+// 		}
+// 	}
+// 	return items
+// }
+
+// // combos - permutation of all sentences
+// func combos(in [][]string) []string {
+// 	tmpP := in[len(in)-1]
+// 	for i := len(in) - 2; i >= 0; i-- {
+// 		tmpP = product(in[i], tmpP)
+// 	}
+// 	return tmpP
+// }
+
+func product(a []string, b [][]string) [][]string {
 	size := len(a) * len(b)
-	items := make([]string, 0, size)
+	items := make([][]string, size)
+
+	var k int
 	for i := range a {
 		for j := range b {
-			items = append(items, a[i]+" "+b[j])
+			var h int
+			items[k] = make([]string, len(b[0])+1)
+			for _, word := range a[i : i+1 : i+1] {
+				items[k][h] = word
+				h++
+			}
+			for _, word := range b[j] {
+				items[k][h] = word
+				h++
+			}
+			k++
 		}
 	}
 	return items
 }
 
+func sliceToSliceOfSlice(words []string) [][]string {
+	res := make([][]string, len(words))
+	for i := range res {
+		res[i] = words[i : i+1]
+	}
+
+	return res
+}
+
 // combos - permutation of all sentences
-func combos(in [][]string) []string {
-	tmpP := in[len(in)-1]
+func combos(in [][]string) [][]string {
+	tmpP := sliceToSliceOfSlice(in[len(in)-1])
+
 	for i := len(in) - 2; i >= 0; i-- {
 		tmpP = product(in[i], tmpP)
 	}
@@ -260,13 +302,13 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string, dist
 	seen := make(map[uint64]struct{}, len(suggestionStrings))
 	suggestions := newSuggestions()
 	for i := range suggestionStrings {
-		sugTokens := strings.Split(suggestionStrings[i], " ")
-		h := hashTokens(sugTokens)
+		// sugTokens := strings.Split(suggestionStrings[i], " ")
+		h := hashTokens(suggestionStrings[i])
 		if _, ok := seen[h]; !ok {
 			seen[h] = struct{}{}
 			sugges := Suggestion{
-				score:  o.score(sugTokens, dist),
-				Tokens: sugTokens,
+				score:  o.score(suggestionStrings[i], dist),
+				Tokens: suggestionStrings[i],
 			}
 			pos := getInsertPosition(suggestions, sugges)
 			insertPosition(suggestions, pos, sugges)

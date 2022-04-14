@@ -49,7 +49,7 @@ func TestTrain(t *testing.T) {
 
 func BenchmarkProduct(b *testing.B) {
 	left := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"}
-	right := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
+	right := [][]string{{"1"}, {"2"}, {"3"}, {"4"}, {"5"}, {"6"}, {"7"}, {"8"}, {"9"}, {"10"}}
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
