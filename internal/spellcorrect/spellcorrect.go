@@ -404,10 +404,10 @@ func getPenalty(prob float64, dist float64) float64 {
 
 	// change space from 0 - 5 to 1 - 10
 	relative := (dist - 0) / (5 - 0)
-	// scaled_value := 1 + (10-1)*relative
-	alpha = 0 + (100-0)*relative
+	scaled_value := 1 + (10-1)*relative
 
-	// alpha = math.Log10(scaled_value) * 100
+	alpha = math.Log10(scaled_value) * 100
+	// alpha = 0 + (100-0)*relative
 
 	// if alpha >= 100. {
 	// 	alpha = 99.
