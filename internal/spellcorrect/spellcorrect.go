@@ -208,8 +208,9 @@ func combos(in [][]string) [][]string {
 
 // lookupTokens - finds all the suggestions given by the spell library and takes the top 20 of them
 func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]float64) {
+	const amountOfSuggestions = 5
 	allSuggestions := make([][]string, len(tokens))
-	dist := make(map[string]float64)
+	dist := make(map[string]float64, len(tokens))
 
 	for i := range tokens {
 		// dont look at short words
@@ -232,8 +233,14 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 		}
 		// gets 5 first suggestions
 		if len(allSuggestions[i]) == 0 {
-			for j := 0; j < len(suggestions) && j < 5; j++ {
-				allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
+			size := amountOfSuggestions
+			if size > len(suggestions) {
+				size = len(suggestions)
+			}
+			allSuggestions[i] = make([]string, size)
+
+			for j := 0; j < len(suggestions) && j < amountOfSuggestions; j++ {
+				allSuggestions[i][j] = suggestions[j].Word
 				dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)*o.penalty
 			}
 		}
