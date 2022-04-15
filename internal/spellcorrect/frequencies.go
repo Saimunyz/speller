@@ -90,6 +90,56 @@ func (o *Frequencies) LoadModel(filename string) error {
 	return nil
 }
 
+// TrainNgramsOnline - attempt to make real-time traning
+func (o *Frequencies) TrainNgramsOnline(tokens []string) error {
+	var hashes []uint64
+
+	o.Trie.Root.Freq += len(tokens)
+
+	// for _, query := range queries
+
+	for _, token := range tokens {
+		hashes = append(hashes, hashString(token))
+	}
+
+	for i := 1; i < 4; i++ {
+		grams := ngrams(hashes, i)
+		for _ngram := range grams {
+			o.Trie.put(_ngram)
+		}
+	}
+
+	// update unigrams probs
+	for i := range hashes {
+		// need to update root.Freq and whole trie after this?
+		node := o.Trie.search([]uint64{hashes[i]})
+		o.UniGramProbs[hashes[i]] = float64(node.Freq) / float64(o.Trie.Root.Freq)
+	}
+
+	for hash := range o.UniGramProbs {
+		node := o.Trie.search([]uint64{hash})
+		o.UniGramProbs[hash] = float64(node.Freq) / float64(o.Trie.Root.Freq)
+		node.Prob = float64(node.Freq) / float64(o.Trie.Root.Freq)
+
+		if node.Children != nil {
+			go o.updateChield(node)
+		}
+	}
+
+	return nil
+}
+
+func (o *Frequencies) updateChield(parent *Node) {
+	for _, child := range parent.Children {
+		if child != nil {
+			child.Prob = float64(child.Freq) / float64(parent.Freq)
+			if child.Children != nil {
+				go o.updateChield(child)
+			}
+		}
+	}
+}
+
 // TrainNgrams - traning ngrams model from big corpus
 func (o *Frequencies) TrainNgrams(in io.Reader) error {
 	if len(o.UniGramProbs) != 0 {
@@ -178,22 +228,19 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 }
 
 // Get - getter for frequencies of N-grams
-func (o *Frequencies) Get(tokens []string) (unigramScore float64, bigramScore float64, trigramScore float64) {
+func (o *Frequencies) Get(tokens []string) float64 {
 	hashes := make([]uint64, len(tokens))
 	for i := range tokens {
 		hashes[i] = hashString(tokens[i])
 	}
-	unigramScore = o.UniGramProbs[hashes[0]]
-
-	_, node2, node3 := o.Trie.search(hashes)
-	if node2 != nil {
-		bigramScore = node2.Prob
+	if len(hashes) == 1 {
+		return o.UniGramProbs[hashes[0]]
 	}
-	if node3 != nil {
-		trigramScore = node3.Prob
+	node := o.Trie.search(hashes)
+	if node == nil {
+		return 0.0
 	}
-
-	return
+	return node.Prob
 }
 
 // Node - trie node
@@ -247,29 +294,16 @@ func (o *WordTrie) put(key ngram) {
 }
 
 // search - looking for ngrams in trie
-func (o *WordTrie) search(key ngram) (*Node, *Node, *Node) {
-	var (
-		unigramNode *Node
-		bigramNode  *Node
-		trigramNode *Node
-	)
+func (o *WordTrie) search(key ngram) *Node {
 	tmp := o.Root
 	for i := 0; i < len(key); i++ {
 		if next, ok := tmp.Children[key[i]]; ok {
 			tmp = next
-			switch i {
-			case 0:
-				unigramNode = tmp
-			case 1:
-				bigramNode = tmp
-			case 3:
-				trigramNode = tmp
-			}
 		} else {
-			return nil, nil, nil
+			return nil
 		}
 	}
-	return unigramNode, bigramNode, trigramNode
+	return tmp
 }
 
 // hashString - hashes string

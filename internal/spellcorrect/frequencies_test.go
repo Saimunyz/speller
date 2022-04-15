@@ -15,17 +15,17 @@ func TestFrequencies(t *testing.T) {
 		return
 	}
 
-	if prob, _, _ := freq.Get([]string{"i"}); prob < math.Log(0.3) || prob > math.Log(0.34) {
+	if prob := freq.Get([]string{"i"}); prob < math.Log(0.3) || prob > math.Log(0.34) {
 		t.Errorf("unigram prob wrong")
 		return
 	}
 
-	if _, prob, _ := freq.Get([]string{"i", "code"}); prob < math.Log(0.3) || prob > math.Log(0.34) {
+	if prob := freq.Get([]string{"i", "code"}); prob < math.Log(0.3) || prob > math.Log(0.34) {
 		t.Errorf("bigram prob wrong")
 		return
 	}
 
-	if _, _, prob := freq.Get([]string{"i", "program", "go"}); prob < math.Log(0.99) || prob > math.Log(1) {
+	if prob := freq.Get([]string{"i", "program", "go"}); prob < math.Log(0.99) || prob > math.Log(1) {
 		t.Errorf("trigram prob wrong")
 		return
 	}
@@ -45,12 +45,12 @@ func TestWordTrie(t *testing.T) {
 	}
 
 	s := ngram{uint64(2)}
-	if n, _, _ := trie.search(s); n.Freq != 2 {
+	if n := trie.search(s); n.Freq != 2 {
 		t.Errorf("error computing freq")
 		return
 	}
 
-	if n, _, _ := trie.search(ngram{uint64(79)}); n != nil {
+	if n := trie.search(ngram{uint64(79)}); n != nil {
 		t.Errorf("error searching not existant")
 		return
 	}
@@ -59,11 +59,11 @@ func TestWordTrie(t *testing.T) {
 		trie.put(bigram)
 	}
 
-	if _, n, _ := trie.search(ngram{uint64(1)}); n.Freq != 2 {
+	if n := trie.search(ngram{uint64(1)}); n.Freq != 2 {
 		t.Errorf("error computing freq")
 		return
 	}
-	if _, n, _ := trie.search(ngram{uint64(1), uint64(2)}); n.Freq != 2 {
+	if n := trie.search(ngram{uint64(1), uint64(2)}); n.Freq != 2 {
 		t.Errorf("error computing freq")
 		return
 	}

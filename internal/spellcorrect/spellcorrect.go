@@ -22,7 +22,7 @@ type Suggestion struct {
 // FrequencyContainer - all the necessary functions for working with the frequency layer
 type FrequencyContainer interface {
 	TrainNgrams(in io.Reader) error
-	Get(tokens []string) (unigramScore float64, bigramScore float64, trigramScore float64)
+	Get(tokens []string) float64
 	LoadModel(filename string) error
 	SaveModel(filename string) error
 }
@@ -139,27 +139,6 @@ func hashTokens(tokens []string) uint64 {
 	return h
 }
 
-// // product - computes product() of given slice
-// func product(a []string, b []string) []string {
-// 	size := len(a) * len(b)
-// 	items := make([]string, 0, size)
-// 	for i := range a {
-// 		for j := range b {
-// 			items = append(items, a[i]+" "+b[j])
-// 		}
-// 	}
-// 	return items
-// }
-
-// // combos - permutation of all sentences
-// func combos(in [][]string) []string {
-// 	tmpP := in[len(in)-1]
-// 	for i := len(in) - 2; i >= 0; i-- {
-// 		tmpP = product(in[i], tmpP)
-// 	}
-// 	return tmpP
-// }
-
 // product - computes product() of given slice
 func product(a []string, b [][]string) [][]string {
 	size := len(a) * len(b)
@@ -260,8 +239,6 @@ func getInsertPosition(nums []Suggestion, target Suggestion) int {
 		mid := min + (max-min)/2
 
 		switch {
-		// case target.score == nums[mid].score:
-		// 	return mid
 		case target.score >= nums[mid].score:
 			max = mid - 1
 		case target.score < nums[mid].score:
@@ -380,27 +357,27 @@ func getPenalty(prob float64, dist float64) float64 {
 func (o *SpellCorrector) GetUnigram(tokens []string) float64 {
 	unigrams := tokens[:1:1]
 
-	prob, _, _ := o.frequencies.Get(unigrams)
+	prob := o.frequencies.Get(unigrams)
 
 	return prob
 }
 
 // GetBigram - returns bigrams
-func (o *SpellCorrector) GetBigram(tokens []string) (float64, float64) {
+func (o *SpellCorrector) GetBigram(tokens []string) float64 {
 	bigrams := tokens[:2:2]
 
-	prob1, prob2, _ := o.frequencies.Get(bigrams)
+	prob := o.frequencies.Get(bigrams)
 
-	return prob1, prob2
+	return prob
 }
 
 // GetTrigram - returns trigrams
-func (o *SpellCorrector) GetTrigram(tokens []string) (float64, float64, float64) {
+func (o *SpellCorrector) GetTrigram(tokens []string) float64 {
 	trigrams := tokens[:3:3]
 
-	prob1, prob2, prob3 := o.frequencies.Get(trigrams)
+	prob := o.frequencies.Get(trigrams)
 
-	return prob1, prob2, prob3
+	return prob
 }
 
 // calculateBigramScore - returns bigram score of a given words
@@ -412,11 +389,11 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]f
 	for i := 0; i+2 <= len(ngrams); i++ {
 		bigrams := ngrams[i : i+2 : i+2]
 
-		unigram, bigram := o.GetBigram(bigrams)
+		bigram := o.frequencies.Get(bigrams)
 		if bigram != 0 {
 			bigram -= getPenalty(bigram, dist[bigrams[0]]+dist[bigrams[1]])
 
-			// unigram := o.GetUnigram(bigrams)
+			unigram := o.GetUnigram(bigrams)
 			if unigram != 0 {
 				unigram += o.weights[0]
 				unigram -= getPenalty(unigram, dist[bigrams[0]])
@@ -440,7 +417,7 @@ func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]
 	for i := 0; i+1 <= len(ngrams); i++ {
 		unigrams := ngrams[i : i+1 : i+1]
 
-		unigram := o.GetUnigram(unigrams)
+		unigram := o.frequencies.Get(unigrams)
 		if unigram != 0 {
 			penalty--
 			unigram -= getPenalty(unigram, dist[unigrams[0]])
@@ -462,17 +439,17 @@ func (o *SpellCorrector) calculateTrigramScore(ngrams []string, dist map[string]
 	for i := 0; i+3 <= len(ngrams); i++ {
 		trigrams := ngrams[i : i+3 : i+3]
 
-		unigram, bigram, trigram := o.GetTrigram(trigrams)
+		trigram := o.frequencies.Get(trigrams)
 		if trigram != 0 {
 			trigram -= getPenalty(trigram, dist[trigrams[0]]+dist[trigrams[1]]+dist[trigrams[2]])
 
-			// bigram := o.GetBigram(trigrams)
+			bigram := o.GetBigram(trigrams)
 			if bigram != 0 {
 				bigram += o.weights[1]
 
 				bigram -= getPenalty(bigram, dist[trigrams[0]]+dist[trigrams[1]])
 			}
-			// unigram := o.GetUnigram(trigrams)
+			unigram := o.GetUnigram(trigrams)
 			if unigram != 0 {
 				unigram += o.weights[0]
 				unigram -= getPenalty(unigram, dist[trigrams[0]])
