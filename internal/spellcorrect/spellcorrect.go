@@ -11,7 +11,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/eskriett/spell"
+	"github.com/Saimunyz/speller/internal/spell"
 	"github.com/segmentio/fasthash/fnv1a"
 )
 
@@ -208,7 +208,7 @@ func combos(in [][]string) [][]string {
 
 // lookupTokens - finds all the suggestions given by the spell library and takes the top 20 of them
 func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]float64) {
-	const amountOfSuggestions = 5
+	const amountOfSuggestions = 10
 	allSuggestions := make([][]string, len(tokens))
 	dist := make(map[string]float64, len(tokens))
 
