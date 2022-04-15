@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Saimunyz/speller/internal/spell"
+	"github.com/eskriett/spell"
 	"github.com/segmentio/fasthash/fnv1a"
 )
 

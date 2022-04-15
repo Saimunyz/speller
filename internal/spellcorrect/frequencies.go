@@ -183,12 +183,9 @@ func (o *Frequencies) Get(tokens []string) (unigramScore float64, bigramScore fl
 	for i := range tokens {
 		hashes[i] = hashString(tokens[i])
 	}
-	// unigramScore = o.UniGramProbs[hashes[0]]
+	unigramScore = o.UniGramProbs[hashes[0]]
 
-	node1, node2, node3 := o.Trie.search(hashes)
-	if node1 != nil {
-		unigramScore = node1.Prob
-	}
+	_, node2, node3 := o.Trie.search(hashes)
 	if node2 != nil {
 		bigramScore = node2.Prob
 	}

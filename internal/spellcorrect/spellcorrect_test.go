@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Saimunyz/speller/internal/spell"
+	"github.com/eskriett/spell"
 )
 
 func getSpellCorrector() *SpellCorrector {
