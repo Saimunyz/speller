@@ -1,6 +1,7 @@
 package spellcorrect
 
 import (
+	"math"
 	"strings"
 	"testing"
 )
@@ -14,17 +15,17 @@ func TestFrequencies(t *testing.T) {
 		return
 	}
 
-	if prob := freq.Get([]string{"i"}); prob < 0.3 || prob > 0.34 {
+	if prob := freq.Get([]string{"i"}); prob < math.Log(0.3) || prob > math.Log(0.34) {
 		t.Errorf("unigram prob wrong")
 		return
 	}
 
-	if prob := freq.Get([]string{"i", "code"}); prob < 0.3 || prob > 0.34 {
+	if prob := freq.Get([]string{"i", "code"}); prob < math.Log(0.3) || prob > math.Log(0.34) {
 		t.Errorf("bigram prob wrong")
 		return
 	}
 
-	if prob := freq.Get([]string{"i", "program", "go"}); prob < 0.99 || prob > 1 {
+	if prob := freq.Get([]string{"i", "program", "go"}); prob < math.Log(0.99) || prob > math.Log(1) {
 		t.Errorf("trigram prob wrong")
 		return
 	}

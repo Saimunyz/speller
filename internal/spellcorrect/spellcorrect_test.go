@@ -2,6 +2,7 @@ package spellcorrect
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 
@@ -104,7 +105,7 @@ func TestSpellCorrect(t *testing.T) {
 		t.Errorf("error getting suggestion for not existant")
 		return
 	}
-	if suggestions[0].score != 0 {
+	if suggestions[0].score != math.Inf(-1) {
 		t.Errorf("error getting suggestion for not existant (different)")
 		return
 	}
