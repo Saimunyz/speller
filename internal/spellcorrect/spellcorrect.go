@@ -10,7 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eskriett/spell"
+//	"github.com/eskriett/spell"
+	"github.com/Saimunyz/speller/internal/spell"
 	"github.com/segmentio/fasthash/fnv1a"
 )
 
@@ -183,6 +184,10 @@ func combos(in [][]string) [][]string {
 	return tmpP
 }
 
+func (o *SpellCorrector) CheckInFreqDict(query string) bool {
+	return o.spell.CheckExistance(query)
+}
+
 // lookupTokens - finds all the suggestions given by the spell library and takes the top 20 of them
 func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]float64) {
 	const amountOfSuggestions = 10
@@ -230,6 +235,52 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 
 	return allSuggestions, dist
 }
+
+// lookupTokens - finds all the suggestions given by the spell library and takes the top 20 of them
+func (o *SpellCorrector) lookupTokens2(tokens []string) ([][]string, map[string]float64) {
+	const amountOfSuggestions = 5
+	allSuggestions := make([][]string, len(tokens))
+	dist := make(map[string]float64, len(tokens))
+
+	for i := range tokens {
+		// dont look at short words
+		if len([]rune(tokens[i])) < 3 {
+			allSuggestions[i] = append(allSuggestions[i], tokens[i])
+			dist[tokens[i]] = 0
+		}
+
+		// gets suggestions
+		var suggestions spell.SuggestionList
+		o.spell.MaxEditDistance = 1
+
+		suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
+		if len(suggestions) < 4 {
+			o.spell.MaxEditDistance = 2
+			suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
+		}
+		// gets 5 first suggestions
+		if len(allSuggestions[i]) == 0 {
+			size := amountOfSuggestions
+			if size > len(suggestions) {
+				size = len(suggestions)
+			}
+			allSuggestions[i] = make([]string, size)
+
+			for j := 0; j < len(suggestions) && j < amountOfSuggestions; j++ {
+				allSuggestions[i][j] = suggestions[j].Word
+				dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)*o.penalty
+			}
+		}
+		// if no suggestions returns token
+		if len(allSuggestions[i]) == 0 {
+			allSuggestions[i] = append(allSuggestions[i], tokens[i])
+			dist[tokens[i]] = 0
+		}
+	}
+
+	return allSuggestions, dist
+}
+
 
 // getInsertPosition - returns the position sorted in descending order
 func getInsertPosition(nums []Suggestion, target Suggestion) int {
@@ -306,6 +357,15 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string, dist
 func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
 	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
 	allSuggestions, dist := o.lookupTokens(tokens)
+	items := o.getSuggestionCandidates(allSuggestions, dist)
+
+	return items
+}
+
+// SpellCorrect - returns suggestions
+func (o *SpellCorrector) SpellCorrect2(s string) []Suggestion {
+	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
+	allSuggestions, dist := o.lookupTokens2(tokens)
 	items := o.getSuggestionCandidates(allSuggestions, dist)
 
 	return items

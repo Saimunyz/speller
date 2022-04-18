@@ -1,6 +1,6 @@
 speller_config:
-  sentences_path: datasets/AllRu-sentences.txt.gz
-  dict_path: datasets/AllRu-freq-dict.txt.gz
+  sentences_path: ../datasets/AllRu-sentences.txt.gz
+  dict_path: ../datasets/AllRu-freq-dict.txt.gz
   min_word_freq: 3
   min_word_length: 4
   penalty: 1.5
