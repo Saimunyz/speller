@@ -12,10 +12,6 @@ package strdist
 // // to transform one string to another, or -1 if the distance is greater than the
 // // maximum distance.
 
-import (
-	"fmt"
-)
-
 const (
 	deletionWeight      = 10  //1.4//0.8
 	replaceWeight       = 1.2 //1.5//0.9
@@ -195,7 +191,7 @@ func DamerauLevenshteinRunesBuffer2(r1, r2 []rune, maxDist int, x, y []float64) 
 			x[j] = current
 		}
 
-		if haveMax && x[i+lenDiff] >= float64(maxDist) / 2{//float64(maxDist) { //-0.5
+		if haveMax && x[i+lenDiff] >= float64(maxDist)/2 { //float64(maxDist) { //-0.5
 			return -1
 		}
 	}
@@ -387,14 +383,14 @@ func KeyDamerauLevenshteinRunesBuffer(r1, r2 []rune, maxDist int, x, y []float64
 	return current
 }
 
-func qwertzKeyboardDistance(a, b rune) float64 {
-	key1 := fmt.Sprintf("%c%c", a, b)
-	key2 := fmt.Sprintf("%c%c", b, a)
-	if dist, ok := ruKeys[key1]; ok {
-		return 1 - dist
-	}
-	if dist, ok := ruKeys[key2]; ok {
-		return 1 - dist
-	}
-	return 1
-}
+// func qwertzKeyboardDistance(a, b rune) float64 {
+// 	key1 := fmt.Sprintf("%c%c", a, b)
+// 	key2 := fmt.Sprintf("%c%c", b, a)
+// 	if dist, ok := ruKeys[key1]; ok {
+// 		return 1 - dist
+// 	}
+// 	if dist, ok := ruKeys[key2]; ok {
+// 		return 1 - dist
+// 	}
+// 	return 1
+// }
