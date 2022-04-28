@@ -19,7 +19,9 @@ import (
 	"sync/atomic"
 	"unicode"
 
-	"github.com/eskriett/strmet"
+	// "github.com/eskriett/strmet"
+	"github.com/Saimunyz/speller/internal/strdist"
+	// "github.com/DMA8/levenDistance"
 	"github.com/mitchellh/mapstructure"
 	"github.com/tidwall/gjson"
 )
@@ -46,6 +48,45 @@ const (
 	defaultEditDistance = 2
 	defaultPrefixLength = 7
 )
+
+var tableRunesRU [][]rune
+
+func initTableRunesRU() {
+	tableRunesRU = [][]rune{
+		[]rune("вп"), //а
+		[]rune("ью"), //б
+		[]rune("ыа"), //в
+		[]rune("нш"), //г
+		[]rune("лж"), //д
+		[]rune("кн"), //е
+		[]rune("дэ"), //ж
+		[]rune("щх"), //з
+		[]rune("мт"), //и
+		[]rune("фц"), //й
+		[]rune("уе"), //к
+		[]rune("од"), //л
+		[]rune("си"), //м
+		[]rune("ег"), //н
+		[]rune("рл"), //о
+		[]rune("ар"), //п
+		[]rune("по"), //р
+		[]rune("чм"), //с
+		[]rune("иь"), //т
+		[]rune("цк"), //у
+		[]rune("яы"), //ф
+		[]rune("зъ"), //х
+		[]rune("йу"), //ц
+		[]rune("яс"), //ч
+		[]rune("гщ"), //ш
+		[]rune("шз"), //щ
+		[]rune("хх"), //ъ
+		[]rune("фв"), //ы
+		[]rune("тб"), //ь
+		[]rune("жъ"), //э
+		[]rune("б."), //ю
+		[]rune("фч"), //я
+	}
+}
 
 // Spell provides access to functions for spelling correction.
 type Spell struct {
@@ -81,7 +122,7 @@ func New() *Spell {
 	s.MaxEditDistance = defaultEditDistance
 	s.PrefixLength = defaultPrefixLength
 	s.library = newLibrary()
-
+	initTableRunesRU()
 	return s
 }
 
@@ -292,7 +333,7 @@ func (s *Spell) Save(filename string) error {
 // Suggestion is used to represent a suggested word from a lookup.
 type Suggestion struct {
 	// The distance between this suggestion and the input word
-	Distance int
+	Distance float64
 	Entry
 }
 
@@ -315,20 +356,24 @@ func (s SuggestionList) String() string {
 }
 
 type lookupParams struct {
-	dictOpts         *dictOptions
-	distanceFunction func([]rune, []rune, int) int
-	editDistance     uint32
-	prefixLength     uint32
-	sortFunc         func(SuggestionList)
-	suggestionLevel  suggestionLevel
+	dictOpts *dictOptions
+	// distanceFunction func([]rune, []rune, int, [][]rune) float64
+	distanceFunction func([]rune, []rune, int) float64
+
+	editDistance    uint32
+	prefixLength    uint32
+	sortFunc        func(SuggestionList)
+	suggestionLevel suggestionLevel
 }
 
 func (s *Spell) defaultLookupParams() *lookupParams {
 	return &lookupParams{
 		dictOpts:         s.defaultDictOptions(),
-		distanceFunction: strmet.DamerauLevenshteinRunes,
-		editDistance:     s.MaxEditDistance,
-		prefixLength:     s.PrefixLength,
+		distanceFunction: strdist.KeyDamerauLevenshteinRunes,
+		// distanceFunction: levenDistance.BestLeven,
+
+		editDistance: s.MaxEditDistance,
+		prefixLength: s.PrefixLength,
 		sortFunc: func(results SuggestionList) {
 			sort.Slice(results, func(i, j int) bool {
 				s1 := results[i]
@@ -368,7 +413,9 @@ func DictionaryOpts(opts ...DictionaryOption) LookupOption {
 // DistanceFunc accepts a function, f(str1, str2, maxDist), which calculates the
 // distance between two strings. It should return -1 if the distance between the
 // strings is greater than maxDist.
-func DistanceFunc(df func([]rune, []rune, int) int) LookupOption {
+// func DistanceFunc(df func([]rune, []rune, int, [][]rune) float64) LookupOption {
+func DistanceFunc(df func([]rune, []rune, int) float64) LookupOption {
+
 	return func(lp *lookupParams) error {
 		lp.distanceFunction = df
 
@@ -421,7 +468,7 @@ func PrefixLength(prefixLength uint32) LookupOption {
 	}
 }
 
-func (s *Spell) newDictSuggestion(input string, dist int, dp *dictOptions) Suggestion {
+func (s *Spell) newDictSuggestion(input string, dist float64, dp *dictOptions) Suggestion {
 	entry, _ := s.library.load(dp.name, input)
 
 	return Suggestion{
@@ -474,7 +521,7 @@ func (s *Spell) Lookup(input string, opts ...LookupOption) (SuggestionList, erro
 		}
 	}
 
-	editDistance := int(lookupParams.editDistance)
+	editDistance := float64(lookupParams.editDistance)
 
 	// If edit distance is 0, just check if input is in the dictionary
 	if editDistance == 0 {
@@ -482,8 +529,8 @@ func (s *Spell) Lookup(input string, opts ...LookupOption) (SuggestionList, erro
 	}
 
 	inputRunes := []rune(input)
-	inputLen := len(inputRunes)
-	prefixLength := int(lookupParams.prefixLength)
+	inputLen := float64(len(inputRunes))
+	prefixLength := float64(lookupParams.prefixLength)
 
 	// Keep track of the deletes we've already considered
 	consideredDeletes := make(map[string]struct{})
@@ -496,13 +543,13 @@ func (s *Spell) Lookup(input string, opts ...LookupOption) (SuggestionList, erro
 	var candidates []string
 
 	// Restrict the length of the input we'll examine
-	inputPrefixLen := min(inputLen, prefixLength)
-	candidates = append(candidates, substring(input, 0, inputPrefixLen))
+	inputPrefixLen := float64(min2(inputLen, prefixLength))
+	candidates = append(candidates, substring(input, 0, int(inputPrefixLen)))
 
 	for i := 0; i < len(candidates); i++ {
 		candidate := candidates[i]
-		candidateLen := len([]rune(candidate))
-		lengthDiff := inputPrefixLen - candidateLen
+		candidateLen := float64(len([]rune(candidate)))
+		lengthDiff := float64(inputPrefixLen - candidateLen)
 
 		// If the difference between the prefixed input and candidate is larger
 		// than the max edit distance then skip the candidate
@@ -517,7 +564,7 @@ func (s *Spell) Lookup(input string, opts ...LookupOption) (SuggestionList, erro
 		candidateHash := getStringHash(candidate)
 		if suggestions, exists := s.dictionaryDeletes.load(dict, candidateHash); exists {
 			for _, suggestion := range suggestions {
-				suggestionLen := suggestion.len
+				suggestionLen := float64(suggestion.len)
 
 				// Ignore the suggestion if it equals the input
 				if suggestion.str == input {
@@ -531,27 +578,27 @@ func (s *Spell) Lookup(input string, opts ...LookupOption) (SuggestionList, erro
 				//   the case of hash collision)
 				// * Its length is the same as the candidate and is *not* the
 				//   candidate (in the case of a hash collision)
-				if abs(suggestionLen-inputLen) > editDistance ||
+				if float64(abs(int(suggestionLen-inputLen))) > editDistance ||
 					suggestionLen < candidateLen ||
 					(suggestionLen == candidateLen && suggestion.str != candidate) {
 					continue
 				}
 
 				// Skip suggestion if its edit distance is too far from input
-				suggPrefixLen := min(suggestionLen, prefixLength)
+				suggPrefixLen := float64(min(int(suggestionLen), int(prefixLength)))
 				if suggPrefixLen > inputPrefixLen &&
 					(suggPrefixLen-candidateLen) > editDistance {
 					continue
 				}
 
-				var dist int
+				var dist float64
 
 				// If the candidate is an empty string and maps to a bin with
 				// suggestions (i.e. hash collision), ignore the suggestion if
 				// its edit distance with the input is greater than max edit
 				// distance
 				if candidateLen == 0 {
-					dist = max(inputLen, suggestionLen)
+					dist = float64(max2(inputLen, suggestionLen))
 					if dist > editDistance ||
 						!addKey(consideredSuggestions, suggestion.str) {
 						continue
@@ -575,7 +622,8 @@ func (s *Spell) Lookup(input string, opts ...LookupOption) (SuggestionList, erro
 					if !addKey(consideredSuggestions, suggestion.str) {
 						continue
 					}
-					if dist = lookupParams.distanceFunction(inputRunes, suggestion.runes, editDistance); dist < 1 {
+					if dist = lookupParams.distanceFunction(inputRunes, suggestion.runes, int(editDistance)); dist < 0 {
+						// if dist = lookupParams.distanceFunction(inputRunes, suggestion.runes, int(editDistance), tableRunesRU); dist < 0.01 {
 						continue
 					}
 				}
@@ -620,7 +668,7 @@ func (s *Spell) Lookup(input string, opts ...LookupOption) (SuggestionList, erro
 				continue
 			}
 
-			for i := 0; i < candidateLen; i++ {
+			for i := 0; i < int(candidateLen); i++ {
 				deleteWord := removeChar(candidate, i)
 
 				if addKey(consideredDeletes, deleteWord) {
@@ -631,9 +679,73 @@ func (s *Spell) Lookup(input string, opts ...LookupOption) (SuggestionList, erro
 	}
 
 	// Order the results
-	lookupParams.sortFunc(results)
+	if len(results) < 32 {
+		lookupParams.sortFunc(results)
+		if len(results) > 5 {
+			return results[:5:5], nil
+		}
+		return results, nil
+	}
+	// 	return results, nil
+	// } else {
+	// 	lookupParams.sortFunc(results)
+	// 	return results, nil
+	// lookupParams.sortFunc(results)
+	// return results, nil
+	// fmt.Print(".")
+	indx := getNBestResults(&results, 5)
+	var newList SuggestionList
+	// newList := make(SuggestionList, 0,5)
+	for _, v := range indx {
+		newList = append(newList, results[v])
+	}
+	return newList, nil
+}
 
-	return results, nil
+func lessSuggest(a, b *Suggestion) bool {
+	if a.Distance < b.Distance {
+		return true
+	} else if a.Distance == b.Distance {
+		return a.Frequency > b.Frequency
+	}
+	return false
+}
+
+func getNBestResults(list *SuggestionList, n int) []int { // только если размер SuggestionList > 2**n
+	bestIndx := make([]int, n)
+	for i := range bestIndx {
+		bestIndx[i] = -1
+	}
+	//var currMin *Suggestion //prevMin,
+	var bInd int
+	currMin := new(Suggestion)
+	currMin.Distance = 1000
+	//prevMin.Distance = 1 << 31
+	//var flag bool
+	for k := 0; k < n; k++ {
+		for i := 0; i < len(*list); i++ {
+			if in(bestIndx, i) {
+				continue
+			}
+			if lessSuggest(&(*list)[i], currMin) {
+				// prevMin = currMin
+				currMin = &(*list)[i]
+				bInd = i
+			}
+		}
+		bestIndx[k] = bInd
+		currMin.Distance = 1000
+	}
+	return bestIndx
+}
+
+func in(slice []int, a int) bool {
+	for _, v := range slice {
+		if v == a {
+			return true
+		}
+	}
+	return false
 }
 
 type segmentParams struct {
@@ -758,7 +870,7 @@ func (s *Spell) Segment(input string, opts ...SegmentOption) (*SegmentResult, er
 
 			if len(suggestions) > 0 {
 				topResult = suggestions[0].Entry.Word
-				topEd += suggestions[0].Distance
+				topEd += int(suggestions[0].Distance)
 
 				freq := suggestions[0].Frequency
 				topProbabilityLog = math.Log10(float64(freq) / cumulativeFreq)
@@ -993,6 +1105,22 @@ func max(a, b int) int {
 }
 
 func min(a, b int) int {
+	if a < b {
+		return a
+	}
+
+	return b
+}
+
+func max2(a, b float64) float64 {
+	if a > b {
+		return a
+	}
+
+	return b
+}
+
+func min2(a, b float64) float64 {
 	if a < b {
 		return a
 	}
