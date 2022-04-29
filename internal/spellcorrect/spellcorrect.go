@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-//	"github.com/eskriett/spell"
+	//	"github.com/eskriett/spell"
 	"github.com/Saimunyz/speller/internal/spell"
 	"github.com/segmentio/fasthash/fnv1a"
 )
@@ -281,7 +281,6 @@ func (o *SpellCorrector) lookupTokens2(tokens []string) ([][]string, map[string]
 	return allSuggestions, dist
 }
 
-
 // getInsertPosition - returns the position sorted in descending order
 func getInsertPosition(nums []Suggestion, target Suggestion) int {
 	min := 0
@@ -397,10 +396,10 @@ func getPenalty(prob float64, dist float64) float64 {
 
 	// change space from 0 - 5 to 1 - 10
 	relative := (dist - 0) / (5 - 0)
-	scaled_value := 1 + (10-1)*relative
+	// scaled_value := 1 + (10-1)*relative
 
-	alpha = math.Log10(scaled_value) * 100
-	// alpha = 0 + (100-0)*relative
+	// alpha = math.Log10(scaled_value) * 100
+	alpha = 0 + (100-0)*relative
 
 	// if alpha >= 100. {
 	// 	alpha = 99.

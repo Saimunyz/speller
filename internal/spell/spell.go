@@ -693,7 +693,7 @@ func (s *Spell) Lookup(input string, opts ...LookupOption) (SuggestionList, erro
 	// lookupParams.sortFunc(results)
 	// return results, nil
 	// fmt.Print(".")
-	indx := getNBestResults(&results, 5)
+	indx := getNBestResults(results, 5)
 	var newList SuggestionList
 	// newList := make(SuggestionList, 0,5)
 	for _, v := range indx {
@@ -702,7 +702,7 @@ func (s *Spell) Lookup(input string, opts ...LookupOption) (SuggestionList, erro
 	return newList, nil
 }
 
-func lessSuggest(a, b *Suggestion) bool {
+func lessSuggest(a, b Suggestion) bool {
 	if a.Distance < b.Distance {
 		return true
 	} else if a.Distance == b.Distance {
@@ -711,25 +711,25 @@ func lessSuggest(a, b *Suggestion) bool {
 	return false
 }
 
-func getNBestResults(list *SuggestionList, n int) []int { // только если размер SuggestionList > 2**n
+func getNBestResults(list SuggestionList, n int) []int { // только если размер SuggestionList > 2**n
 	bestIndx := make([]int, n)
 	for i := range bestIndx {
 		bestIndx[i] = -1
 	}
 	//var currMin *Suggestion //prevMin,
 	var bInd int
-	currMin := new(Suggestion)
+	currMin := Suggestion{}
 	currMin.Distance = 1000
 	//prevMin.Distance = 1 << 31
 	//var flag bool
 	for k := 0; k < n; k++ {
-		for i := 0; i < len(*list); i++ {
+		for i := 0; i < len(list); i++ {
 			if in(bestIndx, i) {
 				continue
 			}
-			if lessSuggest(&(*list)[i], currMin) {
+			if lessSuggest(list[i], currMin) {
 				// prevMin = currMin
-				currMin = &(*list)[i]
+				currMin = list[i]
 				bInd = i
 			}
 		}

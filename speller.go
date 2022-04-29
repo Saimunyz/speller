@@ -332,7 +332,7 @@ func (s *Speller) SpellCorrect3(query string) string {
 	return strings.TrimSpace(result)
 }
 
-func needToFix(query string, wordsToCorrect map[string]struct{})bool{
+func needToFix(query string, wordsToCorrect map[string]struct{}) bool {
 	lastIndxFirstWord := strings.Index(query, " ")
 	if lastIndxFirstWord == -1 {
 		lastIndxFirstWord = len(query)
