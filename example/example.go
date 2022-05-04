@@ -36,7 +36,7 @@ func main() {
 	fmt.Println("канканцелярский ->", correct)
 
 	correct = speller.SpellCorrect2("платя дя женщин")
-	fmt.Println("плятя дя женщин ->", correct)
+	fmt.Println("платя дя женщин ->", correct)
 
 	correct = speller.SpellCorrect2("кот два е изд доп")
 	fmt.Println("кот два е изд доп ->", correct)

@@ -196,9 +196,10 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 
 	for i := range tokens {
 		// dont look at short words
-		if len([]rune(tokens[i])) < 3 {
+		if len([]rune(tokens[i])) < 2 {
 			allSuggestions[i] = append(allSuggestions[i], tokens[i])
 			dist[tokens[i]] = 0
+			continue
 		}
 
 		// gets suggestions
@@ -215,14 +216,23 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 		}
 		// gets 5 first suggestions
 		if len(allSuggestions[i]) == 0 {
-			size := amountOfSuggestions
-			if size > len(suggestions) {
-				size = len(suggestions)
+			// size := amountOfSuggestions
+			// if size > len(suggestions) {
+			// 	size = len(suggestions)
+			// }
+			// allSuggestions[i] = make([]string, size)
+
+			var wordExist bool
+			if len(suggestions) > 0 && suggestions[0].Distance == 0 {
+				wordExist = true
 			}
-			allSuggestions[i] = make([]string, size)
 
 			for j := 0; j < len(suggestions) && j < amountOfSuggestions; j++ {
-				allSuggestions[i][j] = suggestions[j].Word
+				if wordExist && suggestions[j].Distance > 1 {
+					continue
+				}
+
+				allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
 				dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)*o.penalty
 			}
 		}

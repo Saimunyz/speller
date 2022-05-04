@@ -79,10 +79,3 @@ func ignoreSuffix(s1, s2 []rune, s1Len, s2Len int) (int, int) {
 
 	return s1Len, s2Len
 }
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
