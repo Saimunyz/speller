@@ -2,10 +2,11 @@ package spellcorrect
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 
-	"github.com/eskriett/spell"
+	"github.com/Saimunyz/speller/internal/spell"
 )
 
 func getSpellCorrector() *SpellCorrector {
@@ -49,7 +50,7 @@ func TestTrain(t *testing.T) {
 
 func BenchmarkProduct(b *testing.B) {
 	left := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"}
-	right := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
+	right := [][]string{{"1"}, {"2"}, {"3"}, {"4"}, {"5"}, {"6"}, {"7"}, {"8"}, {"9"}, {"10"}}
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -104,7 +105,7 @@ func TestSpellCorrect(t *testing.T) {
 		t.Errorf("error getting suggestion for not existant")
 		return
 	}
-	if suggestions[0].score != 0 {
+	if suggestions[0].score != math.Inf(-1) {
 		t.Errorf("error getting suggestion for not existant (different)")
 		return
 	}

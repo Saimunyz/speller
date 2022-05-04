@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"io"
 	"log"
+	"math"
 	"os"
 	"runtime"
 	"strings"
@@ -199,7 +200,7 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 		if v < o.MinFreq {
 			bl[k] = true
 		} else {
-			o.UniGramProbs[k] = float64(v) / float64(totalWords)
+			o.UniGramProbs[k] = math.Log(float64(v) / float64(totalWords))
 		}
 	}
 
@@ -285,7 +286,11 @@ func (o *WordTrie) put(key ngram) {
 		node = newNode(1)
 		current.Children[key[i]] = node
 	}
-	node.Prob = float64(node.Freq) / float64(current.Freq)
+	tmp := float64(node.Freq) / float64(current.Freq)
+	if tmp == 1 {
+		tmp -= 0.0000001
+	}
+	node.Prob = math.Log(float64(node.Freq) / float64(current.Freq))
 }
 
 // search - looking for ngrams in trie
@@ -312,9 +317,10 @@ func TokenNgrams(words []string, size int) [][]string {
 	if outCap < 0 {
 		outCap = 0
 	}
-	out := make([][]string, 0, outCap)
-	for i := 0; i+size <= len(words); i++ {
-		out = append(out, words[i:i+size:i+size])
+	out := make([][]string, outCap)
+	for i, j := 0, 0; i+size <= len(words); i++ {
+		out[j] = words[i : i+size : i+size]
+		j++
 	}
 	return out
 }

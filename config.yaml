@@ -1,8 +1,8 @@
 speller_config:
   sentences_path: datasets/ru/AllRu-sentences.txt.gz
   dict_path: datasets/ru/AllRu-freq-dict.txt.gz
-  min_word_freq: 3
-  min_word_length: 4
+  min_word_freq: 1
+  min_word_length: 1
   penalty: 1.5
   unigram_weight: 1
   bigram_weight: 5

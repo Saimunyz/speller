@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	_ "net/http/pprof"
 
@@ -28,9 +29,14 @@ func main() {
 	// 	//panic(err)
 	// }
 
+	now := time.Now()
+
 	// correct typos
 	correct := speller.SpellCorrect2("канканцелярский")
 	fmt.Println("канканцелярский ->", correct)
+
+	correct = speller.SpellCorrect2("платя дя женщин")
+	fmt.Println("плятя дя женщин ->", correct)
 
 	correct = speller.SpellCorrect2("кот два е изд доп")
 	fmt.Println("кот два е изд доп ->", correct)
@@ -96,4 +102,38 @@ func main() {
 
 	correct = speller.SpellCorrect2("подмтавкп под пучкт кпаснок аеднрко")
 	fmt.Println("подмтавкп под пучкт кпаснок аеднрко ->", correct)
+
+	fmt.Println("-----------------")
+
+	correct = speller.SpellCorrect2("томат дорожный")
+	fmt.Println("томат дорожный ->", correct)
+
+	correct = speller.SpellCorrect2("чемодан дородный")
+	fmt.Println("чемодан дородный ->", correct)
+
+	correct = speller.SpellCorrect2("жесткие толстовки")
+	fmt.Println("жесткие толстовки ->", correct)
+
+	correct = speller.SpellCorrect2("костюм для тонировок")
+	fmt.Println("костюм для тонировок ->", correct)
+
+	correct = speller.SpellCorrect2("летний плач")
+	fmt.Println("летний плач ->", correct)
+
+	correct = speller.SpellCorrect2("набор свечей столик")
+	fmt.Println("набор свечей столик ->", correct)
+
+	correct = speller.SpellCorrect2("жирное мыло")
+	fmt.Println("жирное мыло ->", correct)
+
+	correct = speller.SpellCorrect2("фотошторы для пальчика")
+	fmt.Println("фотошторы для пальчика ->", correct)
+
+	correct = speller.SpellCorrect2("повседневное боги")
+	fmt.Println("повседневное боги ->", correct)
+
+	correct = speller.SpellCorrect2("подушка разовая")
+	fmt.Println("подушка разовая ->", correct)
+
+	fmt.Println(time.Since(now))
 }

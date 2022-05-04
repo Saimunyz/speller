@@ -259,3 +259,86 @@ func (s *Speller) LoadModel(filename string) error {
 
 	return nil
 }
+
+func (s *Speller) SpellCorrect3(query string) string {
+	if len(query) < 1 {
+		return query
+	}
+	var suggestions []string
+
+	wordsToCorrect := make(map[string]struct{})
+	spltQuery := strings.Fields(query)
+	shortWords := make(map[int]string)             // храним короткое слово и его индекс
+	longWords := make([]string, 0, len(spltQuery)) // длинные слова
+	for i, word := range spltQuery {
+		if len([]rune(word)) < s.cfg.SpellerConfig.MinWordLength {
+			shortWords[i] = word
+			continue
+		}
+		longWords = append(longWords, word)
+	}
+	for key, value := range shortWords {
+		shortWords[key] = s.spellcorrector.SpellCorrectWithoutContext(value)[0]
+	}
+	//если слово есть в словаре, его не исправляем
+	for _, v := range longWords {
+		if !s.spellcorrector.CheckInFreqDict(v) {
+			wordsToCorrect[v] = struct{}{}
+		}
+	}
+	if len(wordsToCorrect) == 0 { //если нет длинных слов для исправления, то собираем ответ и выходим
+		var extInd int
+		var result string
+		for j := range spltQuery {
+			if word, ok := shortWords[j]; ok {
+				result = strings.Join([]string{result, word}, " ")
+				continue
+			}
+			result = strings.Join([]string{result, longWords[extInd]}, " ")
+			extInd++
+		}
+		// returns the most likely option
+		return strings.TrimSpace(result)
+	}
+
+	queries := s.splitByWords(strings.Join(longWords, " "), 3) //генерим триграммы из длинных слов
+	for i, query := range queries {
+		//если первого слова триграммы нет в словаре, то мы отдаем спеллеру
+		if ok := needToFix(query, wordsToCorrect); !ok && i != len(queries)-1 {
+			//если первое слово триграммы есть в словаре, то мы всю триграмму без изменений добавляем в саджесты
+			//потому что при сборке ответа из саджестов, берется только первое слово саджеста
+			suggestions = append(suggestions, query)
+			continue
+		}
+		suggestion := s.spellcorrector.SpellCorrect2(query)
+		suggestions = append(suggestions, strings.Join(suggestion[0].Tokens, " "))
+	}
+
+	joined := s.joinByWords(suggestions, 3) //собрали длинные исправленные слова из саджестов
+
+	words := strings.Fields(joined)
+	var extInd int
+	var result string
+	for j := range spltQuery {
+		if word, ok := shortWords[j]; ok {
+			result = strings.Join([]string{result, word}, " ")
+			continue
+		}
+		result = strings.Join([]string{result, words[extInd]}, " ")
+		extInd++
+	}
+
+	// returns the most likely option
+	return strings.TrimSpace(result)
+}
+
+func needToFix(query string, wordsToCorrect map[string]struct{}) bool {
+	lastIndxFirstWord := strings.Index(query, " ")
+	if lastIndxFirstWord == -1 {
+		lastIndxFirstWord = len(query)
+	}
+	if _, ok := wordsToCorrect[query[:lastIndxFirstWord]]; ok {
+		return true
+	}
+	return false
+}

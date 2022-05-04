@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
-	"github.com/eskriett/spell"
+	//	"github.com/eskriett/spell"
+	"github.com/Saimunyz/speller/internal/spell"
 	"github.com/segmentio/fasthash/fnv1a"
 )
 
@@ -26,7 +26,6 @@ type FrequencyContainer interface {
 	Get(tokens []string) float64
 	LoadModel(filename string) error
 	SaveModel(filename string) error
-	TrainNgramsOnline(tokens []string) error
 }
 
 // Tokinizer - tokenizer function from token layer
@@ -142,38 +141,58 @@ func hashTokens(tokens []string) uint64 {
 }
 
 // product - computes product() of given slice
-func product(a []string, b []string) []string {
+func product(a []string, b [][]string) [][]string {
 	size := len(a) * len(b)
-	items := make([]string, 0, size)
-	newStr := strings.Builder{}
+	items := make([][]string, size)
+
+	var k int
 	for i := range a {
 		for j := range b {
-			newStr.Grow(len(a[i]) + len(b[j]) + 1)
-			newStr.WriteString(a[i])
-			newStr.WriteString(" ")
-			newStr.WriteString(b[j])
-
-			items = append(items, newStr.String())
-
-			newStr.Reset()
+			var h int
+			items[k] = make([]string, len(b[0])+1)
+			for _, word := range a[i : i+1 : i+1] {
+				items[k][h] = word
+				h++
+			}
+			for _, word := range b[j] {
+				items[k][h] = word
+				h++
+			}
+			k++
 		}
 	}
 	return items
 }
 
+// sliceToSliceOfSlice - change slice to slice of slice
+func sliceToSliceOfSlice(words []string) [][]string {
+	res := make([][]string, len(words))
+	for i := range res {
+		res[i] = words[i : i+1]
+	}
+
+	return res
+}
+
 // combos - permutation of all sentences
-func combos(in [][]string) []string {
-	tmpP := in[len(in)-1]
+func combos(in [][]string) [][]string {
+	tmpP := sliceToSliceOfSlice(in[len(in)-1])
+
 	for i := len(in) - 2; i >= 0; i-- {
 		tmpP = product(in[i], tmpP)
 	}
 	return tmpP
 }
 
+func (o *SpellCorrector) CheckInFreqDict(query string) bool {
+	return o.spell.CheckExistance(query)
+}
+
 // lookupTokens - finds all the suggestions given by the spell library and takes the top 20 of them
 func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]float64) {
+	const amountOfSuggestions = 10
 	allSuggestions := make([][]string, len(tokens))
-	dist := make(map[string]float64)
+	dist := make(map[string]float64, len(tokens))
 
 	for i := range tokens {
 		// dont look at short words
@@ -184,15 +203,71 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 
 		// gets suggestions
 		var suggestions spell.SuggestionList
-		o.spell.MaxEditDistance = 1 
+		o.spell.MaxEditDistance = 2
+
+		suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
+		if len(suggestions) == 0 {
+			o.spell.MaxEditDistance = 3
+			suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
+			if len(suggestions) == 0 {
+				suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
+			}
+		}
+		// gets 5 first suggestions
+		if len(allSuggestions[i]) == 0 {
+			size := amountOfSuggestions
+			if size > len(suggestions) {
+				size = len(suggestions)
+			}
+			allSuggestions[i] = make([]string, size)
+
+			for j := 0; j < len(suggestions) && j < amountOfSuggestions; j++ {
+				allSuggestions[i][j] = suggestions[j].Word
+				dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)*o.penalty
+			}
+		}
+		// if no suggestions returns token
+		if len(allSuggestions[i]) == 0 {
+			allSuggestions[i] = append(allSuggestions[i], tokens[i])
+			dist[tokens[i]] = 0
+		}
+	}
+
+	return allSuggestions, dist
+}
+
+// lookupTokens - finds all the suggestions given by the spell library and takes the top 20 of them
+func (o *SpellCorrector) lookupTokens2(tokens []string) ([][]string, map[string]float64) {
+	const amountOfSuggestions = 5
+	allSuggestions := make([][]string, len(tokens))
+	dist := make(map[string]float64, len(tokens))
+
+	for i := range tokens {
+		// dont look at short words
+		if len([]rune(tokens[i])) < 3 {
+			allSuggestions[i] = append(allSuggestions[i], tokens[i])
+			dist[tokens[i]] = 0
+		}
+
+		// gets suggestions
+		var suggestions spell.SuggestionList
+		o.spell.MaxEditDistance = 1
+
 		suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelClosest))
-		if len(suggestions) < 2 {
+		if len(suggestions) < 4 {
+			o.spell.MaxEditDistance = 2
 			suggestions, _ = o.spell.Lookup(tokens[i], spell.SuggestionLevel(spell.LevelAll))
 		}
-		// if no words == token gets 5 first suggestions
+		// gets 5 first suggestions
 		if len(allSuggestions[i]) == 0 {
-			for j := 0; j < len(suggestions) && j < 5; j++ {
-				allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
+			size := amountOfSuggestions
+			if size > len(suggestions) {
+				size = len(suggestions)
+			}
+			allSuggestions[i] = make([]string, size)
+
+			for j := 0; j < len(suggestions) && j < amountOfSuggestions; j++ {
+				allSuggestions[i][j] = suggestions[j].Word
 				dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)*o.penalty
 			}
 		}
@@ -214,8 +289,6 @@ func getInsertPosition(nums []Suggestion, target Suggestion) int {
 		mid := min + (max-min)/2
 
 		switch {
-		// case target.score == nums[mid].score:
-		// 	return mid
 		case target.score >= nums[mid].score:
 			max = mid - 1
 		case target.score < nums[mid].score:
@@ -263,13 +336,13 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string, dist
 	seen := make(map[uint64]struct{}, len(suggestionStrings))
 	suggestions := newSuggestions()
 	for i := range suggestionStrings {
-		sugTokens := strings.Split(suggestionStrings[i], " ")
-		h := hashTokens(sugTokens)
+		// sugTokens := strings.Split(suggestionStrings[i], " ")
+		h := hashTokens(suggestionStrings[i])
 		if _, ok := seen[h]; !ok {
 			seen[h] = struct{}{}
 			sugges := Suggestion{
-				score:  o.score(sugTokens, dist),
-				Tokens: sugTokens,
+				score:  o.score(suggestionStrings[i], dist),
+				Tokens: suggestionStrings[i],
 			}
 			pos := getInsertPosition(suggestions, sugges)
 			insertPosition(suggestions, pos, sugges)
@@ -279,60 +352,20 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string, dist
 	return suggestions
 }
 
-func (o *SpellCorrector) addWordToModel(newWords chan string) {
-	for query := range newWords {
-		var tokens []string
-
-		words := strings.Fields(query)
-		for _, word := range words {
-			if len([]rune(word)) < 2 {
-				continue
-			}
-			word = strings.TrimRightFunc(word, func(r rune) bool {
-				return !unicode.IsLetter(r) && !unicode.IsNumber(r)
-			})
-			word = strings.ToLower(word)
-			tokens = append(tokens, word)
-
-			// update spell library
-			entry, err := o.spell.GetEntry(word)
-			if err != nil || entry == nil {
-				// add new entry
-				o.spell.AddEntry(spell.Entry{
-					Frequency: 1,
-					Word:      word,
-				})
-				continue
-			}
-			o.spell.AddEntry(spell.Entry{
-				Frequency: entry.Frequency + 1,
-				Word:      entry.Word,
-			})
-		}
-		o.frequencies.TrainNgramsOnline(tokens)
-	}
-}
-
 // SpellCorrect - returns suggestions
 func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
-	// new words for model improvments
-	newWords := make(chan string)
-	if o.autoTrainMode {
-		go o.addWordToModel(newWords)
-	}
-
 	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
 	allSuggestions, dist := o.lookupTokens(tokens)
 	items := o.getSuggestionCandidates(allSuggestions, dist)
 
-	// sending data to model improvments
-	if o.autoTrainMode {
-		go func() {
-			sugges := strings.Join(items[0].Tokens, " ")
-			newWords <- sugges
-			newWords <- s
-		}()
-	}
+	return items
+}
+
+// SpellCorrect - returns suggestions
+func (o *SpellCorrector) SpellCorrect2(s string) []Suggestion {
+	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
+	allSuggestions, dist := o.lookupTokens2(tokens)
+	items := o.getSuggestionCandidates(allSuggestions, dist)
 
 	return items
 }
@@ -363,9 +396,10 @@ func getPenalty(prob float64, dist float64) float64 {
 
 	// change space from 0 - 5 to 1 - 10
 	relative := (dist - 0) / (5 - 0)
-	scaled_value := 1 + (10-1)*relative
+	// scaled_value := 1 + (10-1)*relative
 
-	alpha = math.Log10(scaled_value) * 100
+	// alpha = math.Log10(scaled_value) * 100
+	alpha = 0 + (100-0)*relative
 
 	// if alpha >= 100. {
 	// 	alpha = 99.
@@ -380,129 +414,112 @@ func getPenalty(prob float64, dist float64) float64 {
 
 // GetUnigram - returns unigram with penalties
 func (o *SpellCorrector) GetUnigram(tokens []string) float64 {
-	unigrams := TokenNgrams(tokens, 1)
+	unigrams := tokens[:1:1]
 
-	prob := o.frequencies.Get(unigrams[0])
+	prob := o.frequencies.Get(unigrams)
 
 	return prob
 }
 
 // GetBigram - returns bigrams
 func (o *SpellCorrector) GetBigram(tokens []string) float64 {
-	bigrams := TokenNgrams(tokens, 2)
+	bigrams := tokens[:2:2]
 
-	prob := o.frequencies.Get(bigrams[0])
+	prob := o.frequencies.Get(bigrams)
 
 	return prob
 }
 
 // GetTrigram - returns trigrams
 func (o *SpellCorrector) GetTrigram(tokens []string) float64 {
-	trigrams := TokenNgrams(tokens, 3)
+	trigrams := tokens[:3:3]
 
-	prob := o.frequencies.Get(trigrams[0])
+	prob := o.frequencies.Get(trigrams)
 
 	return prob
 }
 
 // calculateBigramScore - returns bigram score of a given words
 func (o *SpellCorrector) calculateBigramScore(ngrams []string, dist map[string]float64) float64 {
-	var (
-		uniLog float64
-		biLog  float64
-		score  float64
-	)
-
-	bigrams := TokenNgrams(ngrams, 2)
+	var score float64
 
 	// penalty := len(bigrams)
-	for i := range bigrams {
-		bigram := o.frequencies.Get(bigrams[i])
-		if bigram != 0 {
-			biLog = math.Log(bigram)
-			biLog -= getPenalty(biLog, dist[bigrams[i][0]]+dist[bigrams[i][1]])
 
-			unigram := o.GetUnigram(bigrams[i])
+	for i := 0; i+2 <= len(ngrams); i++ {
+		bigrams := ngrams[i : i+2 : i+2]
+
+		bigram := o.frequencies.Get(bigrams)
+		if bigram != 0 {
+			bigram -= getPenalty(bigram, dist[bigrams[0]]+dist[bigrams[1]])
+
+			unigram := o.GetUnigram(bigrams)
 			if unigram != 0 {
-				uniLog = math.Log(unigram) + o.weights[0]
-				uniLog -= getPenalty(uniLog, dist[bigrams[i][0]])
+				unigram += o.weights[0]
+				unigram -= getPenalty(unigram, dist[bigrams[0]])
 			}
 
-			score += uniLog + biLog
+			score += unigram + bigram
 		} else {
-			tmp := o.calculateUnigramScore(bigrams[i], dist)
+			tmp := o.calculateUnigramScore(bigrams, dist)
 			score += (tmp + tmp)
 		}
 	}
-
 	return score
 }
 
 // calculateUnigramScore - returns unigram score of a given words
 func (o *SpellCorrector) calculateUnigramScore(ngrams []string, dist map[string]float64) float64 {
-	var (
-		uniLog float64
-		score  float64
-	)
+	var score float64
 
-	unigrams := TokenNgrams(ngrams, 1)
+	penalty := len(ngrams)
 
-	penalty := len(unigrams)
+	for i := 0; i+1 <= len(ngrams); i++ {
+		unigrams := ngrams[i : i+1 : i+1]
 
-	for i := range unigrams {
-		unigram := o.frequencies.Get(unigrams[i])
+		unigram := o.frequencies.Get(unigrams)
 		if unigram != 0 {
 			penalty--
-			uniLog = math.Log(unigram)
-			uniLog -= getPenalty(uniLog, dist[unigrams[i][0]])
+			unigram -= getPenalty(unigram, dist[unigrams[0]])
 		}
 
-		score += uniLog
+		score += unigram
 	}
 
 	if penalty > 0 {
 		score = o.applyPenalty(score, penalty)
 	}
-
 	return score
 }
 
 // calculateTrigramScore -  returns trigrams score of a given words
 func (o *SpellCorrector) calculateTrigramScore(ngrams []string, dist map[string]float64) float64 {
-	var (
-		uniLog float64
-		biLog  float64
-		triLog float64
-		score  float64
-	)
+	var score float64
 
-	trigrams := TokenNgrams(ngrams, 3)
+	for i := 0; i+3 <= len(ngrams); i++ {
+		trigrams := ngrams[i : i+3 : i+3]
 
-	for i := range trigrams {
-		trigram := o.frequencies.Get(trigrams[i])
+		trigram := o.frequencies.Get(trigrams)
 		if trigram != 0 {
-			triLog = math.Log(trigram)
-			triLog -= getPenalty(triLog, dist[trigrams[i][0]]+dist[trigrams[i][1]]+dist[trigrams[i][2]])
+			trigram -= getPenalty(trigram, dist[trigrams[0]]+dist[trigrams[1]]+dist[trigrams[2]])
 
-			bigram := o.GetBigram(trigrams[i])
+			bigram := o.GetBigram(trigrams)
 			if bigram != 0 {
-				biLog = math.Log(bigram) + o.weights[1]
-				biLog -= getPenalty(biLog, dist[trigrams[i][0]]+dist[trigrams[i][1]])
+				bigram += o.weights[1]
+
+				bigram -= getPenalty(bigram, dist[trigrams[0]]+dist[trigrams[1]])
 			}
-			unigram := o.GetUnigram(trigrams[i])
+			unigram := o.GetUnigram(trigrams)
 			if unigram != 0 {
-				uniLog = math.Log(unigram) + o.weights[0]
-				uniLog -= getPenalty(uniLog, dist[trigrams[i][0]])
+				unigram += o.weights[0]
+				unigram -= getPenalty(unigram, dist[trigrams[0]])
 			}
 
-			score += uniLog + biLog + triLog
+			score += unigram + bigram + trigram
 		} else {
-			tmp := o.calculateBigramScore(trigrams[i], dist)
+			tmp := o.calculateBigramScore(trigrams, dist)
 			score += tmp + tmp
 		}
-
 	}
-
 	return score
 }
 
@@ -531,54 +548,14 @@ func (o *SpellCorrector) score(tokens []string, dist map[string]float64) float64
 
 	switch {
 	case len(tokens) == 1:
-		ngrams := TokenNgrams(tokens, 1)
-		for i := range ngrams {
-			score += o.calculateUnigramScore(ngrams[i], dist)
-		}
+		score += o.calculateUnigramScore(tokens, dist)
 	case len(tokens) == 2:
-		ngrams := TokenNgrams(tokens, 2)
-
-		for i := range ngrams {
-			score += o.calculateBigramScore(ngrams[i], dist)
-		}
+		score += o.calculateBigramScore(tokens, dist)
 	case len(tokens) >= 3:
-		ngrams := TokenNgrams(tokens, 3)
+		score += o.calculateTrigramScore(tokens, dist)
 
-		for i := range ngrams {
-			score += o.calculateTrigramScore(ngrams[i], dist)
-		}
 	}
 
-	// ngrams := TokenNgrams(tokens, 3)
-	// if len(ngrams) == 0 {
-	// 	ngrams = TokenNgrams(tokens, 2)
-	// 	if len(ngrams) == 0 {
-	// 		ngrams = TokenNgrams(tokens, 1)
-	// 	}
-	// }
-
-	// if len(tokens) > 2 {
-	// 	if tokens[0] == "орел" && tokens[1] == "заправляет" && tokens[2] == "крылья" {
-	// 		fmt.Println(score)
-	// 	}
-	// 	if tokens[0] == "орел" && tokens[1] == "расправляет" && tokens[2] == "крылья" {
-	// 		fmt.Println(score)
-	// 	}
-	// }
-
-	// for i := range ngrams {
-	// 	switch len(ngrams[i]) {
-	// 	case 1:
-	// 		score += o.calculateUnigramScore(ngrams[i], dist)
-	// 	case 2:
-	// 		score += o.calculateBigramScore(ngrams[i], dist)
-	// 	case 3:
-	// 		score += o.calculateTrigramScore(ngrams[i], dist)
-	// 	}
-	// }
-	// if score != 0 {
-	// 	score = math.Exp(score)
-	// }
 	if score == 0 {
 		score = math.Inf(-1)
 	}
