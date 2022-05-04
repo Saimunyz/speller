@@ -35,6 +35,9 @@ func main() {
 	correct := speller.SpellCorrect2("канканцелярский")
 	fmt.Println("канканцелярский ->", correct)
 
+	correct = speller.SpellCorrect2("искусственное растение искусственные цветы осока букет цветов декор для дома")
+	fmt.Println("искусственное растение искусственные цветы осока букет цветов декор для дома ->", correct)
+
 	correct = speller.SpellCorrect2("платя дя женщин")
 	fmt.Println("платя дя женщин ->", correct)
 

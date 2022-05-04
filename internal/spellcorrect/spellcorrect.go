@@ -278,7 +278,9 @@ func (o *SpellCorrector) lookupTokens2(tokens []string) ([][]string, map[string]
 
 			for j := 0; j < len(suggestions) && j < amountOfSuggestions; j++ {
 				allSuggestions[i][j] = suggestions[j].Word
-				dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)*o.penalty
+				if _, ok := dist[suggestions[j].Word]; !ok {
+					dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)*o.penalty
+				}
 			}
 		}
 		// if no suggestions returns token
