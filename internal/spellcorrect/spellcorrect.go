@@ -233,7 +233,9 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 				}
 
 				allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
-				dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)*o.penalty
+				if _, ok := dist[suggestions[j].Word]; !ok {
+					dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)*o.penalty
+				}
 			}
 		}
 		// if no suggestions returns token

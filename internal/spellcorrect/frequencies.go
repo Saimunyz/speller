@@ -290,7 +290,7 @@ func (o *WordTrie) put(key ngram) {
 	if tmp == 1 {
 		tmp -= 0.0000001
 	}
-	node.Prob = math.Log(float64(node.Freq) / float64(current.Freq))
+	node.Prob = math.Log(tmp)
 }
 
 // search - looking for ngrams in trie
