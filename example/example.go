@@ -15,14 +15,14 @@ func main() {
 	speller := speller.NewSpeller("config.yaml")
 
 	// load model
-	// err := speller.LoadModel("models/AllRu-model.gz")
-	// if err != nil {
-	// 	fmt.Printf("No such file: %v\n", err)
-	// 	//panic(err)
-	// }
+	err := speller.LoadModel("models/AllRu-model.gz")
+	if err != nil {
+		fmt.Printf("No such file: %v\n", err)
+		//panic(err)
+	}
 
 	// or train model and save
-	speller.Train()
+	// speller.Train()
 	// err := speller.SaveModel("models/AllRu-model.gz")
 	// if err != nil {
 	// 	fmt.Printf("No such file: %v\n", err)
@@ -35,8 +35,8 @@ func main() {
 	correct := speller.SpellCorrect2("канканцелярский")
 	fmt.Println("канканцелярский ->", correct)
 
-	correct = speller.SpellCorrect2("сборник упражнений по грамматике английского языка")
-	fmt.Println("сборник упражнений по грамматике английского языка ->", correct)
+	correct = speller.SpellCorrect2("свеа для торт музыкальна для раскывающаяся свеча для свеч на тот")
+	fmt.Println("свеа для торт музыкальна для раскывающаяся свеча для свеч на тот ->", correct)
 
 	correct = speller.SpellCorrect2("платя дя женщин")
 	fmt.Println("платя дя женщин ->", correct)
