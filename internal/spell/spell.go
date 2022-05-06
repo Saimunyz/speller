@@ -681,8 +681,8 @@ func (s *Spell) Lookup(input string, opts ...LookupOption) (SuggestionList, erro
 	// Order the results
 	if len(results) < 32 {
 		lookupParams.sortFunc(results)
-		if len(results) > 5 {
-			return results[:5:5], nil
+		if len(results) > 10 {
+			return results[:10:10], nil
 		}
 		return results, nil
 	}
@@ -693,7 +693,7 @@ func (s *Spell) Lookup(input string, opts ...LookupOption) (SuggestionList, erro
 	// lookupParams.sortFunc(results)
 	// return results, nil
 	// fmt.Print(".")
-	indx := getNBestResults(results, 5)
+	indx := getNBestResults(results, 10)
 	var newList SuggestionList
 	// newList := make(SuggestionList, 0,5)
 	for _, v := range indx {

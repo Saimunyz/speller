@@ -222,15 +222,15 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 			// }
 			// allSuggestions[i] = make([]string, size)
 
-			var wordExist bool
-			if len(suggestions) > 0 && suggestions[0].Distance == 0 {
-				wordExist = true
-			}
+			// var wordExist bool
+			// if len(suggestions) > 0 && suggestions[0].Distance == 0 {
+			// 	wordExist = true
+			// }
 
 			for j := 0; j < len(suggestions) && j < amountOfSuggestions; j++ {
-				if wordExist && suggestions[j].Distance > 1 {
-					continue
-				}
+				// if wordExist && suggestions[j].Distance > 1 {
+				// 	continue
+				// }
 
 				allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
 				if _, ok := dist[suggestions[j].Word]; !ok {

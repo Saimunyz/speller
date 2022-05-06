@@ -57,7 +57,8 @@ func DamerauLevenshteinRunesBuffer2(r1, r2 []rune, maxDist int, x, y []float64) 
 
 		if r1Len == 0 {
 			if r2Len <= maxDist {
-				return absF(float64(r2Len) - 0.2)
+				return float64(r2Len)
+				// return float64(r2Len) * 0.8
 			}
 			return -1
 		}
