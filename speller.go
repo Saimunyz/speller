@@ -147,7 +147,8 @@ func (s *Speller) SpellCorrect2(query string) string {
 		return query
 	}
 	var suggestions []string
-	spltQuery := strings.Fields(query)
+	spltQuery, _ := s.spellcorrector.Tokenizer.Tokens(strings.NewReader(query))
+	// spltQuery := strings.Fields(query)
 	shortWords := make(map[int]string) // saves index and short words
 	longWords := make([]string, 0, len(spltQuery))
 	for i, word := range spltQuery {

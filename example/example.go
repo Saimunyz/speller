@@ -35,17 +35,17 @@ func main() {
 	correct := speller.SpellCorrect2("канканцелярский")
 	fmt.Println("канканцелярский ->", correct)
 
-	correct = speller.SpellCorrect2("куклы принцессы дисней")
-	fmt.Println("куклы принцессы дисней ->", correct)
+	correct = speller.SpellCorrect2("шлифовальная машинка")
+	fmt.Println("шлифовальная машинка ->", correct)
 
-	correct = speller.SpellCorrect2("салфетки после депиляции")
-	fmt.Println("салфетки после депиляции ->", correct)
+	correct = speller.SpellCorrect2("другие аксессуары и доп оборудование")
+	fmt.Println("другие аксессуары и доп оборудование ->", correct)
 
 	correct = speller.SpellCorrect2("платя дя женщин")
 	fmt.Println("платя дя женщин ->", correct)
 
-	correct = speller.SpellCorrect2("кот два е изд доп")
-	fmt.Println("кот два е изд доп ->", correct)
+	correct = speller.SpellCorrect2("красовки")
+	fmt.Println("красовки ->", correct)
 
 	correct = speller.SpellCorrect2("Желтая скатерть")
 	fmt.Println("Желтая скатерть ->", correct)

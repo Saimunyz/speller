@@ -34,7 +34,7 @@ type Tokenizer interface {
 }
 
 type SpellCorrector struct {
-	tokenizer     Tokenizer
+	Tokenizer     Tokenizer
 	frequencies   FrequencyContainer
 	spell         *spell.Spell
 	weights       []float64
@@ -53,7 +53,7 @@ func NewSpellCorrector(
 	penalty float64,
 ) *SpellCorrector {
 	ans := SpellCorrector{
-		tokenizer:     tokenizer,
+		Tokenizer:     tokenizer,
 		frequencies:   frequencies,
 		spell:         spell.New(),
 		weights:       weights,
@@ -368,7 +368,7 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string, dist
 
 // SpellCorrect - returns suggestions
 func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
-	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
+	tokens, _ := o.Tokenizer.Tokens(strings.NewReader(s))
 	allSuggestions, dist := o.lookupTokens(tokens)
 	items := o.getSuggestionCandidates(allSuggestions, dist)
 
@@ -377,7 +377,7 @@ func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
 
 // SpellCorrect - returns suggestions
 func (o *SpellCorrector) SpellCorrect2(s string) []Suggestion {
-	tokens, _ := o.tokenizer.Tokens(strings.NewReader(s))
+	tokens, _ := o.Tokenizer.Tokens(strings.NewReader(s))
 	allSuggestions, dist := o.lookupTokens2(tokens)
 	items := o.getSuggestionCandidates(allSuggestions, dist)
 
@@ -394,6 +394,10 @@ func (o *SpellCorrector) SpellCorrectWithoutContext(s string) []string {
 
 	for i := range result {
 		result[i] = suggestions[i].Word
+	}
+
+	if len(result) < 1 {
+		return []string{s}
 	}
 
 	return result

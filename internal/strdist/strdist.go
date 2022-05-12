@@ -13,7 +13,7 @@ package strdist
 // // maximum distance.
 
 const (
-	deletionWeight      = 0.8  //1.4//0.8
+	deletionWeight      = 0.6  //1.4//0.8
 	replaceWeight       = 0.9  //1.5//0.9
 	transpositionWeight = 0.8  //1.2//0.8
 	insertWeight        = 1.01 //1.01
@@ -70,38 +70,38 @@ func DamerauLevenshteinRunesBuffer2(r1, r2 []rune, maxDist int, x, y []float64) 
 		return float64(*toReturn)
 	}
 	tableRunes := [][]rune{
-		[]rune("вп"), //а
-		[]rune("ью"), //б
-		[]rune("ыа"), //в
-		[]rune("нш"), //г
-		[]rune("лж"), //д
-		[]rune("кн"), //е
-		[]rune("дэ"), //ж
-		[]rune("щх"), //з
-		[]rune("мт"), //и
-		[]rune("фц"), //й
-		[]rune("уе"), //к
-		[]rune("од"), //л
-		[]rune("си"), //м
-		[]rune("ег"), //н
-		[]rune("рл"), //о
-		[]rune("ар"), //п
-		[]rune("по"), //р
-		[]rune("чм"), //с
-		[]rune("иь"), //т
-		[]rune("цк"), //у
-		[]rune("йы"), //ф
-		[]rune("зъ"), //х
-		[]rune("йу"), //ц
-		[]rune("яс"), //ч
-		[]rune("гщ"), //ш
-		[]rune("шз"), //щ
-		[]rune("хэ"), //ъ
-		[]rune("фв"), //ы
-		[]rune("тб"), //ь
-		[]rune("жх"), //э
-		[]rune("б."), //ю
-		[]rune("фч"), //я
+		[]rune("впо"), //а
+		[]rune("ью"),  //б
+		[]rune("ыа"),  //в
+		[]rune("нш"),  //г
+		[]rune("лж"),  //д
+		[]rune("кн"),  //е
+		[]rune("дэ"),  //ж
+		[]rune("щх"),  //з
+		[]rune("мт"),  //и
+		[]rune("фц"),  //й
+		[]rune("уе"),  //к
+		[]rune("од"),  //л
+		[]rune("си"),  //м
+		[]rune("ег"),  //н
+		[]rune("рла"), //о
+		[]rune("ар"),  //п
+		[]rune("по"),  //р
+		[]rune("чм"),  //с
+		[]rune("иь"),  //т
+		[]rune("цк"),  //у
+		[]rune("йы"),  //ф
+		[]rune("зъ"),  //х
+		[]rune("йу"),  //ц
+		[]rune("яс"),  //ч
+		[]rune("гщ"),  //ш
+		[]rune("шз"),  //щ
+		[]rune("хэ"),  //ъ
+		[]rune("фв"),  //ы
+		[]rune("тб"),  //ь
+		[]rune("жх"),  //э
+		[]rune("б."),  //ю
+		[]rune("фч"),  //я
 	}
 	x = getCharCosts(r2Len, maxDist, x)
 	if y == nil {
@@ -195,11 +195,20 @@ func DamerauLevenshteinRunesBuffer2(r1, r2 []rune, maxDist int, x, y []float64) 
 func getWeight(s1Char, s2Char rune, tableRunes [][]rune) float64 {
 	checkInd := s1Char - 'а'
 	if checkInd >= 0 && checkInd <= 31 {
-		if tableRunes[checkInd][0] == s2Char || tableRunes[checkInd][1] == s2Char {
-			return 0.4 //closeChange
+		if len(tableRunes[checkInd]) == 3 {
+			if tableRunes[checkInd][0] == s2Char || tableRunes[checkInd][1] == s2Char || tableRunes[checkInd][2] == s2Char {
+				return 0.4 //closeChange
+			} else {
+				return 1 //notCloseChange
+			}
 		} else {
-			return 1 //notCloseChange
+			if tableRunes[checkInd][0] == s2Char || tableRunes[checkInd][1] == s2Char {
+				return 0.4 //closeChange
+			} else {
+				return 1 //notCloseChange
+			}
 		}
+
 	}
 
 	return 1
