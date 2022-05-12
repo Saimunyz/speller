@@ -12,10 +12,10 @@ import (
 func main() {
 	fmt.Println("Example of usage")
 	// create speller
-	speller := speller.NewSpeller("config.yaml")
+	speller := speller.NewSpeller("../config.yaml")
 
 	// load model
-	err := speller.LoadModel("models/AllRu-model.gz")
+	err := speller.LoadModel("../models/AllRu-model.gz")
 	if err != nil {
 		fmt.Printf("No such file: %v\n", err)
 		//panic(err)
@@ -35,17 +35,17 @@ func main() {
 	correct := speller.SpellCorrect2("канканцелярский")
 	fmt.Println("канканцелярский ->", correct)
 
-	correct = speller.SpellCorrect2("шлифовальная машинка")
-	fmt.Println("шлифовальная машинка ->", correct)
+	correct = speller.SpellCorrect2("чехол на самсунг а32")
+	fmt.Println("чехол на самсунг а32 ->", correct)
 
-	correct = speller.SpellCorrect2("другие аксессуары и доп оборудование")
-	fmt.Println("другие аксессуары и доп оборудование ->", correct)
+	correct = speller.SpellCorrect2("чехол на самсунг a50")
+	fmt.Println("чехол на самсунг a50 ->", correct)
 
 	correct = speller.SpellCorrect2("платя дя женщин")
 	fmt.Println("платя дя женщин ->", correct)
 
-	correct = speller.SpellCorrect2("красовки")
-	fmt.Println("красовки ->", correct)
+	correct = speller.SpellCorrect2("бомпер женский")
+	fmt.Println("бомпер женский ->", correct)
 
 	correct = speller.SpellCorrect2("Желтая скатерть")
 	fmt.Println("Желтая скатерть ->", correct)

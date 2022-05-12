@@ -196,7 +196,7 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 
 	for i := range tokens {
 		// dont look at short words
-		if len([]rune(tokens[i])) < 2 {
+		if len([]rune(tokens[i])) < 2 || strings.ContainsAny(tokens[i], "1234567890") {
 			allSuggestions[i] = append(allSuggestions[i], tokens[i])
 			dist[tokens[i]] = 0
 			continue
