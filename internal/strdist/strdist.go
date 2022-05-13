@@ -1,5 +1,7 @@
 package strdist
 
+import "strings"
+
 // // DamerauLevenshtein distance is a string metric for measuring the edit
 // // distance between two sequences:
 // // https://en.wikipedia.org/wiki/Damerau%E3%80%93Levenshtein_distance
@@ -18,6 +20,41 @@ const (
 	transpositionWeight = 0.8  //1.2//0.8
 	insertWeight        = 1.01 //1.01
 )
+
+var tableRunes = []string{
+	"впо",  //а
+	"ью",   //б
+	"ыа",   //в
+	"нш",   //г
+	"лж",   //д
+	"кни",  //е
+	"дэ",   //ж
+	"щх",   //з
+	"мтеы", //и
+	"фц",   //й
+	"уе",   //к
+	"од",   //л
+	"си",   //м
+	"ег",   //н
+	"рла",  //о
+	"ар",   //п
+	"по",   //р
+	"чм",   //с
+	"иь",   //т
+	"цк",   //у
+	"йы",   //ф
+	"зъ",   //х
+	"йу",   //ц
+	"яс",   //ч
+	"гщ",   //ш
+	"шз",   //щ
+	"хэ",   //ъ
+	"фв",   //ы
+	"тб",   //ь
+	"жх",   //э
+	"б.",   //ю
+	"фч",   //я
+}
 
 // DamerauLevenshteinRunes is the same as DamerauLevenshtein but accepts runes
 // instead of strings
@@ -68,40 +105,6 @@ func DamerauLevenshteinRunesBuffer2(r1, r2 []rune, maxDist int, x, y []float64) 
 	lenDiff, maxDist, toReturn := getLenDiff(r1Len, r2Len, maxDist)
 	if toReturn != nil {
 		return float64(*toReturn)
-	}
-	tableRunes := [][]rune{
-		[]rune("впо"), //а
-		[]rune("ью"),  //б
-		[]rune("ыа"),  //в
-		[]rune("нш"),  //г
-		[]rune("лж"),  //д
-		[]rune("кн"),  //е
-		[]rune("дэ"),  //ж
-		[]rune("щх"),  //з
-		[]rune("мт"),  //и
-		[]rune("фц"),  //й
-		[]rune("уе"),  //к
-		[]rune("од"),  //л
-		[]rune("си"),  //м
-		[]rune("ег"),  //н
-		[]rune("рла"), //о
-		[]rune("ар"),  //п
-		[]rune("по"),  //р
-		[]rune("чм"),  //с
-		[]rune("иь"),  //т
-		[]rune("цк"),  //у
-		[]rune("йы"),  //ф
-		[]rune("зъ"),  //х
-		[]rune("йу"),  //ц
-		[]rune("яс"),  //ч
-		[]rune("гщ"),  //ш
-		[]rune("шз"),  //щ
-		[]rune("хэ"),  //ъ
-		[]rune("фв"),  //ы
-		[]rune("тб"),  //ь
-		[]rune("жх"),  //э
-		[]rune("б."),  //ю
-		[]rune("фч"),  //я
 	}
 	x = getCharCosts(r2Len, maxDist, x)
 	if y == nil {
@@ -192,23 +195,14 @@ func DamerauLevenshteinRunesBuffer2(r1, r2 []rune, maxDist int, x, y []float64) 
 	return current
 }
 
-func getWeight(s1Char, s2Char rune, tableRunes [][]rune) float64 {
+func getWeight(s1Char, s2Char rune, tableRunes []string) float64 {
 	checkInd := s1Char - 'а'
 	if checkInd >= 0 && checkInd <= 31 {
-		if len(tableRunes[checkInd]) == 3 {
-			if tableRunes[checkInd][0] == s2Char || tableRunes[checkInd][1] == s2Char || tableRunes[checkInd][2] == s2Char {
-				return 0.4 //closeChange
-			} else {
-				return 1 //notCloseChange
-			}
+		if strings.ContainsRune(tableRunes[checkInd], s2Char) {
+			return 0.4 //closeChange
 		} else {
-			if tableRunes[checkInd][0] == s2Char || tableRunes[checkInd][1] == s2Char {
-				return 0.4 //closeChange
-			} else {
-				return 1 //notCloseChange
-			}
+			return 1 //notCloseChange
 		}
-
 	}
 
 	return 1
