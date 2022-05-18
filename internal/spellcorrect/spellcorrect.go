@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	//	"github.com/eskriett/spell"
 	"github.com/Saimunyz/speller/internal/spell"
 	"github.com/segmentio/fasthash/fnv1a"
 )
@@ -62,6 +61,7 @@ func NewSpellCorrector(
 		autoTrainMode: autoTrainMode,
 	}
 	ans.spell.MaxEditDistance = 3
+	ans.spell.PrefixLength = 8
 	return &ans
 }
 
@@ -106,6 +106,8 @@ func (o *SpellCorrector) LoadFreqDict(in io.Reader) error {
 	if err := scanner.Err(); err != nil {
 		return err
 	}
+
+	o.spell.PrefixLength = 7 // return to default value
 
 	return nil
 }

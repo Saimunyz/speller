@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Saimunyz/speller/internal/spell"
-	"github.com/eskriett/strmet"
+	"github.com/Saimunyz/speller/internal/strdist"
 )
 
 func BenchmarkSpell_Lookup(b *testing.B) {
@@ -88,9 +88,9 @@ func ExampleSpell_Lookup_configureDistanceFunc() {
 
 	// Configure the Lookup to use Levenshtein distance rather than the default
 	// Damerau Levenshtein calculation
-	_, _ = s.Lookup("example", spell.DistanceFunc(func(r1, r2 []rune, maxDist int) int {
+	_, _ = s.Lookup("example", spell.DistanceFunc(func(r1, r2 []rune, maxDist int) float64 {
 		// Call the Levenshtein function from github.com/eskriett/strmet
-		return strmet.LevenshteinRunes(r1, r2, maxDist)
+		return strdist.KeyDamerauLevenshteinRunes(r1, r2, maxDist)
 	}))
 }
 

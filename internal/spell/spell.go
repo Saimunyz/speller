@@ -49,45 +49,6 @@ const (
 	defaultPrefixLength = 7
 )
 
-var tableRunesRU [][]rune
-
-func initTableRunesRU() {
-	tableRunesRU = [][]rune{
-		[]rune("вп"), //а
-		[]rune("ью"), //б
-		[]rune("ыа"), //в
-		[]rune("нш"), //г
-		[]rune("лж"), //д
-		[]rune("кн"), //е
-		[]rune("дэ"), //ж
-		[]rune("щх"), //з
-		[]rune("мт"), //и
-		[]rune("фц"), //й
-		[]rune("уе"), //к
-		[]rune("од"), //л
-		[]rune("си"), //м
-		[]rune("ег"), //н
-		[]rune("рл"), //о
-		[]rune("ар"), //п
-		[]rune("по"), //р
-		[]rune("чм"), //с
-		[]rune("иь"), //т
-		[]rune("цк"), //у
-		[]rune("яы"), //ф
-		[]rune("зъ"), //х
-		[]rune("йу"), //ц
-		[]rune("яс"), //ч
-		[]rune("гщ"), //ш
-		[]rune("шз"), //щ
-		[]rune("хх"), //ъ
-		[]rune("фв"), //ы
-		[]rune("тб"), //ь
-		[]rune("жъ"), //э
-		[]rune("б."), //ю
-		[]rune("фч"), //я
-	}
-}
-
 // Spell provides access to functions for spelling correction.
 type Spell struct {
 	// The max number of deletes that will be performed to each word in the
@@ -122,7 +83,6 @@ func New() *Spell {
 	s.MaxEditDistance = defaultEditDistance
 	s.PrefixLength = defaultPrefixLength
 	s.library = newLibrary()
-	initTableRunesRU()
 	return s
 }
 

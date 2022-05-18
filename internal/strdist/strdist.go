@@ -180,7 +180,7 @@ func DamerauLevenshteinRunesBuffer2(r1, r2 []rune, maxDist int, x, y []float64) 
 					s2Char {
 					thisTransCost++
 					if thisTransCost < current {
-						current = thisTransCost
+						current = thisTransCost + transpositionWeight
 					}
 				}
 			}

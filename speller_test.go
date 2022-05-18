@@ -1,17 +1,15 @@
-package main
+package speller
 
 import (
 	"fmt"
 	"testing"
-
-	"github.com/Saimunyz/speller"
 )
 
 func BenchmarkSpellCheck(b *testing.B) {
-	speller1 := speller.NewSpeller("config.yaml")
+	speller1 := NewSpeller("config.yaml")
 
 	// load model
-	err := speller1.LoadModel("../models/AllRu-model_new.gz")
+	err := speller1.LoadModel("models/AllRu-model.gz")
 	if err != nil {
 		fmt.Printf("No such file: %v\n", err)
 		panic(err)
