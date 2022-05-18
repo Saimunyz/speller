@@ -86,69 +86,51 @@ func (s *Speller) Train() {
 	runtime.GC()
 }
 
-func (s *Speller) splitByWords(line string, amountOfWords int) []string {
-	if len(line) < 1 {
-		return []string{}
+func (s *Speller) splitByWords(words []string, amountOfWords int) [][]string {
+	if len(words) < 1 || len(words) <= amountOfWords {
+		return [][]string{words}
 	}
 
-	words := strings.Fields(line)
-	if len(words) <= amountOfWords {
-		return []string{line}
-	}
-
-	var lines []string
+	lines := make([][]string, len(words)-amountOfWords+1)
 
 	for i := 0; i+amountOfWords <= len(words); i++ {
-		lines = append(lines, strings.Join(words[i:i+amountOfWords], " "))
+		lines[i] = words[i : i+amountOfWords]
 	}
-
-	// for i := 0; i < len(words); i += amountOfWords {
-	// 	stop := i + amountOfWords
-	// 	if stop > len(words) {
-	// 		start := len(words) - amountOfWords
-	// 		lines = append(lines, strings.Join(words[start:], " "))
-	// 	} else {
-	// 		lines = append(lines, strings.Join(words[i:stop], " "))
-	// 	}
-	// }
 
 	return lines
 }
 
-func (o *Speller) joinByWords(lines []string, splitedByWords int) string {
+func (o *Speller) joinByWords(lines [][]string, splitedByWords int) []string {
 	if len(lines) < 1 {
-		return ""
+		return []string{}
 	}
-	words := strings.Fields(lines[0])
-	if len(words) < splitedByWords {
+
+	if len(lines[0]) < splitedByWords {
 		return lines[0]
 	}
 
-	query := strings.Builder{}
+	query := make([]string, len(lines)+len(lines[len(lines)-1][1:]))
 
-	for _, line := range lines {
-		words = strings.Fields(line)
-		query.Grow(len([]rune(words[0])) + 1)
-		query.WriteString(words[0])
-		query.WriteRune(' ')
+	for i, words := range lines {
+		query[i] = words[0]
+		if i == len(lines)-1 {
+			i++
+			for _, word := range words[1:] {
+				query[i] = word
+				i++
+			}
+		}
 	}
 
-	for _, word := range words[1:] {
-		query.Grow(len([]rune(word)) + 1)
-		query.WriteString(word)
-		query.WriteRune(' ')
-	}
-
-	return strings.TrimSpace(query.String())
+	return query
 }
 
 func (s *Speller) SpellCorrect2(query string) string {
 	if len(query) < 1 {
 		return query
 	}
-	var suggestions []string
+
 	spltQuery, _ := s.spellcorrector.Tokenizer.Tokens(strings.NewReader(query))
-	// spltQuery := strings.Fields(query)
 	shortWords := make(map[int]string) // saves index and short words
 	longWords := make([]string, 0, len(spltQuery))
 	for i, word := range spltQuery {
@@ -162,14 +144,13 @@ func (s *Speller) SpellCorrect2(query string) string {
 		shortWords[key] = s.spellcorrector.SpellCorrectWithoutContext(value)[0]
 	}
 
-	queries := s.splitByWords(strings.Join(longWords, " "), 3)
-	for _, query := range queries {
+	queries := s.splitByWords(longWords, 3)
+	for i, query := range queries {
 		suggestion := s.spellcorrector.SpellCorrect(query)
-		suggestions = append(suggestions, strings.Join(suggestion[0].Tokens, " "))
+		queries[i] = suggestion[0].Tokens
 	}
 
-	joined := s.joinByWords(suggestions, 3)
-	words := strings.Fields(joined)
+	words := s.joinByWords(queries, 3)
 
 	var extInd int
 	var result string
@@ -184,26 +165,6 @@ func (s *Speller) SpellCorrect2(query string) string {
 
 	// returns the most likely option
 	return strings.TrimSpace(result)
-}
-
-//SpellCorrect - corrects all typos in a given query
-func (s *Speller) SpellCorrect(query string) string {
-	if len(query) < 1 {
-		return query
-	}
-
-	var suggestions []string
-
-	queries := s.splitByWords(query, 3)
-	for _, query := range queries {
-		suggestion := s.spellcorrector.SpellCorrect(query)
-		suggestions = append(suggestions, strings.Join(suggestion[0].Tokens, " "))
-	}
-
-	result := s.joinByWords(suggestions, 3)
-
-	// returns the most likely option
-	return result
 }
 
 // SpellCorrectAllSuggestions - returns top 10 corrections typos in a given query
@@ -265,10 +226,9 @@ func (s *Speller) SpellCorrect3(query string) string {
 	if len(query) < 1 {
 		return query
 	}
-	var suggestions []string
 
 	wordsToCorrect := make(map[string]struct{})
-	spltQuery := strings.Fields(query)
+	spltQuery, _ := s.spellcorrector.Tokenizer.Tokens(strings.NewReader(query))
 	shortWords := make(map[int]string)             // храним короткое слово и его индекс
 	longWords := make([]string, 0, len(spltQuery)) // длинные слова
 	for i, word := range spltQuery {
@@ -302,22 +262,21 @@ func (s *Speller) SpellCorrect3(query string) string {
 		return strings.TrimSpace(result)
 	}
 
-	queries := s.splitByWords(strings.Join(longWords, " "), 3) //генерим триграммы из длинных слов
+	queries := s.splitByWords(longWords, 3) //генерим триграммы из длинных слов
 	for i, query := range queries {
 		//если первого слова триграммы нет в словаре, то мы отдаем спеллеру
-		if ok := needToFix(query, wordsToCorrect); !ok && i != len(queries)-1 {
-			//если первое слово триграммы есть в словаре, то мы всю триграмму без изменений добавляем в саджесты
-			//потому что при сборке ответа из саджестов, берется только первое слово саджеста
-			suggestions = append(suggestions, query)
-			continue
-		}
-		suggestion := s.spellcorrector.SpellCorrect2(query)
-		suggestions = append(suggestions, strings.Join(suggestion[0].Tokens, " "))
+		// if ok := needToFix(query, wordsToCorrect); !ok && i != len(queries)-1 {
+		// 	//если первое слово триграммы есть в словаре, то мы всю триграмму без изменений добавляем в саджесты
+		// 	//потому что при сборке ответа из саджестов, берется только первое слово саджеста
+		// 	suggestions = append(suggestions, query)
+		// 	continue
+		// }
+		suggestion := s.spellcorrector.SpellCorrect(query)
+		queries[i] = suggestion[0].Tokens
 	}
 
-	joined := s.joinByWords(suggestions, 3) //собрали длинные исправленные слова из саджестов
+	words := s.joinByWords(queries, 3) //собрали длинные исправленные слова из саджестов
 
-	words := strings.Fields(joined)
 	var extInd int
 	var result string
 	for j := range spltQuery {

@@ -15,19 +15,19 @@ func main() {
 	speller := speller.NewSpeller("config.yaml")
 
 	// load model
-	err := speller.LoadModel("models/AllRu-model.gz")
-	if err != nil {
-		fmt.Printf("No such file: %v\n", err)
-		//panic(err)
-	}
-
-	// or train model and save
-	// speller.Train()
-	// err := speller.SaveModel("models/AllRu-model.gz")
+	// err := speller.LoadModel("models/AllRu-model.gz")
 	// if err != nil {
 	// 	fmt.Printf("No such file: %v\n", err)
 	// 	//panic(err)
 	// }
+
+	// or train model and save
+	speller.Train()
+	err := speller.SaveModel("models/AllRu-model.gz")
+	if err != nil {
+		fmt.Printf("No such file: %v\n", err)
+		//panic(err)
+	}
 
 	now := time.Now()
 
@@ -38,8 +38,8 @@ func main() {
 	correct = speller.SpellCorrect2("жеский")
 	fmt.Println("жеское ->", correct)
 
-	correct = speller.SpellCorrect2("трусы без швов детские")
-	fmt.Println("трусы без швов детские ->", correct)
+	correct = speller.SpellCorrect2("тайсеая сазь для лечениф гриюка ногтнй гртбок")
+	fmt.Println("тайсеая сазь для лечениф гриюка ногтнй гртбок ->", correct)
 
 	correct = speller.SpellCorrect2("платя дя женщин")
 	fmt.Println("платя дя женщин ->", correct)

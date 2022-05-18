@@ -236,7 +236,7 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 
 				allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
 				if _, ok := dist[suggestions[j].Word]; !ok {
-					dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)*o.penalty
+					dist[suggestions[j].Word] = float64(suggestions[j].Distance) * o.penalty
 				}
 			}
 		}
@@ -369,8 +369,8 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]string, dist
 }
 
 // SpellCorrect - returns suggestions
-func (o *SpellCorrector) SpellCorrect(s string) []Suggestion {
-	tokens, _ := o.Tokenizer.Tokens(strings.NewReader(s))
+func (o *SpellCorrector) SpellCorrect(tokens []string) []Suggestion {
+	// tokens, _ := o.Tokenizer.Tokens(strings.NewReader(s))
 	allSuggestions, dist := o.lookupTokens(tokens)
 	items := o.getSuggestionCandidates(allSuggestions, dist)
 

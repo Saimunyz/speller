@@ -93,8 +93,8 @@ func TestSpellCorrect(t *testing.T) {
 	}
 
 	s1 := "restaurant in Bonn"
-
-	suggestions := sc.SpellCorrect(s1)
+	tokens, _ := sc.Tokenizer.Tokens(strings.NewReader(s1))
+	suggestions := sc.SpellCorrect(tokens)
 	for i, sug := range suggestions {
 		if sug.Tokens == nil {
 			suggestions = suggestions[:i]
