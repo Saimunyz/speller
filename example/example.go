@@ -38,8 +38,8 @@ func main() {
 	correct = speller.SpellCorrect2("жеский")
 	fmt.Println("жеское ->", correct)
 
-	correct = speller.SpellCorrect2("фотощтора короткин занавескм крамивые шторф коассические шторв шторф на два окнв размеп х см")
-	fmt.Println("фотощтора короткин занавескм крамивые шторф коассические шторв шторф на два окнв размеп х см ->", correct)
+	correct = speller.SpellCorrect2("му му")
+	fmt.Println("му му ->", correct)
 
 	correct = speller.SpellCorrect2("тайсеая сазь для лечениф гриюка ногтнй гртбок")
 	fmt.Println("тайсеая сазь для лечениф гриюка ногтнй гртбок ->", correct)

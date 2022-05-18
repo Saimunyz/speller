@@ -114,7 +114,11 @@ func (s *Speller) Train() {
 }
 
 func (s *Speller) splitByWords(words []string, amountOfWords int) [][]string {
-	if len(words) < 1 || len(words) <= amountOfWords {
+	if len(words) < 1 {
+		return [][]string{}
+	}
+
+	if len(words) <= amountOfWords {
 		return [][]string{words}
 	}
 

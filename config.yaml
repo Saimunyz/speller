@@ -4,7 +4,7 @@ speller_config:
   short_words_path: datasets/ru/Allru-short-words.txt.gz
   min_word_freq: 1
   min_word_length: 3
-  penalty: 1
+  penalty: 1.5
   unigram_weight: 1
   bigram_weight: 5
   trigram_weight: 4
