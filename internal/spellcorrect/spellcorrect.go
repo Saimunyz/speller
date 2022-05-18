@@ -32,6 +32,12 @@ type Tokenizer interface {
 	Tokens(in io.Reader) ([]string, error)
 }
 
+// freqDicts - for holding dictionary names and readers
+type FreqDicts struct {
+	Name   string
+	Reader io.Reader
+}
+
 type SpellCorrector struct {
 	Tokenizer     Tokenizer
 	frequencies   FrequencyContainer
@@ -84,7 +90,7 @@ func (o *SpellCorrector) LoadModel(filename string) error {
 }
 
 // loadFreqDict - loads ferequencies dictionary in spell lib
-func (o *SpellCorrector) LoadFreqDict(in io.Reader) error {
+func (o *SpellCorrector) LoadFreqDict(in io.Reader, dictName string) error {
 	scanner := bufio.NewScanner(in)
 	for scanner.Scan() {
 		parts := strings.Split(scanner.Text(), " ")
@@ -100,7 +106,9 @@ func (o *SpellCorrector) LoadFreqDict(in io.Reader) error {
 		o.spell.AddEntry(spell.Entry{
 			Frequency: freq,
 			Word:      parts[0],
-		})
+		},
+			spell.DictionaryName(dictName),
+		)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -113,20 +121,26 @@ func (o *SpellCorrector) LoadFreqDict(in io.Reader) error {
 }
 
 // Train - train n-grams model from in Reader and read freq from in2 Reader
-func (o *SpellCorrector) Train(in io.Reader, in2 io.Reader) error {
+func (o *SpellCorrector) Train(sentences io.Reader, dicts ...FreqDicts) error {
 	// counting n-grams freq
-	err := o.frequencies.TrainNgrams(in)
+	err := o.frequencies.TrainNgrams(sentences)
 	if err != nil {
 		return err
 	}
 	runtime.GC()
 
+	// ToDo refactoring for better reading
 	// load freq dict
+	// assume than first would be common dictionary, second shortWords
+	// all names declared in o.freqDicts
 	t := time.Now()
-	err = o.LoadFreqDict(in2)
-	if err != nil {
-		return err
+	for _, dict := range dicts {
+		err = o.LoadFreqDict(dict.Reader, dict.Name)
+		if err != nil {
+			return err
+		}
 	}
+
 	log.Printf("Freq dictionary loaded: %v", time.Since(t))
 
 	runtime.GC()
@@ -236,7 +250,7 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]string, map[string]f
 
 				allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
 				if _, ok := dist[suggestions[j].Word]; !ok {
-					dist[suggestions[j].Word] = float64(suggestions[j].Distance) * o.penalty
+					dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)/2*o.penalty
 				}
 			}
 		}
@@ -387,11 +401,16 @@ func (o *SpellCorrector) SpellCorrect2(s string) []Suggestion {
 }
 
 func (o *SpellCorrector) SpellCorrectWithoutContext(s string) []string {
-	if len([]rune(s)) < 3 {
+	if len([]rune(s)) < 2 {
 		return []string{s}
 	}
 
-	suggestions, _ := o.spell.Lookup(s, spell.SuggestionLevel(spell.LevelClosest))
+	// ToDo need to refactor?
+	const shortWordsDict = "shortWords"
+
+	suggestions, _ := o.spell.Lookup(s, spell.SuggestionLevel(spell.LevelClosest), spell.DictionaryOpts(
+		spell.DictionaryName(shortWordsDict)),
+	)
 	result := make([]string, len(suggestions))
 
 	for i := range result {

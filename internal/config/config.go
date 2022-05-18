@@ -11,15 +11,16 @@ import (
 
 // SpellerConfig - contains all parametrs for speller configuration
 type SpellerConfig struct {
-	SentencesPath string  `yaml:"sentences_path"`
-	DictPath      string  `yaml:"dict_path"`
-	MinWordFreq   int     `yaml:"min_word_freq"`
-	MinWordLength int     `yaml:"min_word_length"`
-	Penalty       float64 `yaml:"penalty"`
-	UnigramWeight float64 `yaml:"unigram_weight"`
-	BigramWeight  float64 `yaml:"bigram_weight"`
-	TrigramWeight float64 `yaml:"trigram_weight"`
-	AutoTrainMode bool    `yaml:"auto_train_mode"`
+	SentencesPath  string  `yaml:"sentences_path"`
+	DictPath       string  `yaml:"dict_path"`
+	ShortWordsPath string  `yaml:"short_words_path"`
+	MinWordFreq    int     `yaml:"min_word_freq"`
+	MinWordLength  int     `yaml:"min_word_length"`
+	Penalty        float64 `yaml:"penalty"`
+	UnigramWeight  float64 `yaml:"unigram_weight"`
+	BigramWeight   float64 `yaml:"bigram_weight"`
+	TrigramWeight  float64 `yaml:"trigram_weight"`
+	AutoTrainMode  bool    `yaml:"auto_train_mode"`
 }
 
 // Config - contains all configuration parameters in config package
@@ -36,6 +37,9 @@ func (o *Config) Validate() error {
 	}
 	if o.SpellerConfig.DictPath == "" {
 		return fmt.Errorf("you need to set 'dict_path'")
+	}
+	if o.SpellerConfig.ShortWordsPath == "" {
+		return fmt.Errorf("you need to set 'short_words_path'")
 	}
 	if o.SpellerConfig.MinWordLength == 0 {
 		return fmt.Errorf("you need to set non zero 'min_word_length'")

@@ -23,7 +23,8 @@ func TestTrain(t *testing.T) {
 	r1 := strings.NewReader(trainwords)
 
 	sc := getSpellCorrector()
-	if err := sc.Train(r, r1); err != nil {
+	dict := FreqDicts{Name: "default", Reader: r1}
+	if err := sc.Train(r, dict); err != nil {
 		t.Errorf(err.Error())
 		return
 	}
@@ -87,7 +88,8 @@ func TestSpellCorrect(t *testing.T) {
 	r1 := strings.NewReader(trainwords)
 
 	sc := getSpellCorrector()
-	if err := sc.Train(r, r1); err != nil {
+	dict := FreqDicts{Name: "default", Reader: r1}
+	if err := sc.Train(r, dict); err != nil {
 		t.Errorf(err.Error())
 		return
 	}

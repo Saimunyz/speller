@@ -13,6 +13,11 @@ import (
 	"github.com/Saimunyz/speller/internal/spellcorrect"
 )
 
+const (
+	shortWordsDict = "shortWords"
+	defaultDict    = "default"
+)
+
 type Speller struct {
 	spellcorrector *spellcorrect.SpellCorrector
 	cfg            *config.Config
@@ -52,33 +57,55 @@ func NewSpeller(configPapth string) *Speller {
 
 // Train - train from zero n-grams model with specified in cfg datasets
 func (s *Speller) Train() {
-	file, err := os.Open(s.cfg.SpellerConfig.SentencesPath)
+	sentencesFile, err := os.Open(s.cfg.SpellerConfig.SentencesPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
+	defer sentencesFile.Close()
 
-	gz, err := gzip.NewReader(file)
+	sentencesGz, err := gzip.NewReader(sentencesFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer gz.Close()
+	defer sentencesGz.Close()
 
-	file2, err := os.Open(s.cfg.SpellerConfig.DictPath)
+	dictFile, err := os.Open(s.cfg.SpellerConfig.DictPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file2.Close()
+	defer dictFile.Close()
 
-	gz2, err := gzip.NewReader(file2)
+	dictGz, err := gzip.NewReader(dictFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer gz2.Close()
+	defer dictGz.Close()
+
+	commonDict := spellcorrect.FreqDicts{
+		Name:   "defatult",
+		Reader: dictGz,
+	}
+
+	shortWordsFile, err := os.Open(s.cfg.SpellerConfig.ShortWordsPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer shortWordsFile.Close()
+
+	shortWordsGz, err := gzip.NewReader(shortWordsFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer shortWordsGz.Close()
+
+	shortWordsDict := spellcorrect.FreqDicts{
+		Name:   "shortWords",
+		Reader: shortWordsGz,
+	}
 
 	log.Printf("starting training...")
 	t0 := time.Now()
-	s.spellcorrector.Train(gz, gz2)
+	s.spellcorrector.Train(sentencesGz, commonDict, shortWordsDict)
 	t1 := time.Now()
 	log.Printf("Finished[%s]\n", t1.Sub(t0))
 
@@ -201,19 +228,36 @@ func (s *Speller) LoadModel(filename string) error {
 		return err
 	}
 
-	file2, err := os.Open(s.cfg.SpellerConfig.DictPath)
+	dictFile, err := os.Open(s.cfg.SpellerConfig.DictPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file2.Close()
+	defer dictFile.Close()
 
-	gz, err := gzip.NewReader(file2)
+	dictGz, err := gzip.NewReader(dictFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer gz.Close()
+	defer dictGz.Close()
 
-	err = s.spellcorrector.LoadFreqDict(gz)
+	shortWordsFile, err := os.Open(s.cfg.SpellerConfig.ShortWordsPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer shortWordsFile.Close()
+
+	shortWordsGz, err := gzip.NewReader(shortWordsFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer shortWordsGz.Close()
+
+	err = s.spellcorrector.LoadFreqDict(dictGz, defaultDict)
+	if err != nil {
+		return err
+	}
+
+	err = s.spellcorrector.LoadFreqDict(shortWordsGz, shortWordsDict)
 	if err != nil {
 		return err
 	}
