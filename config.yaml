@@ -1,11 +1,7 @@
 speller_config:
   sentences_path: datasets/ru/AllRu-sentences.txt.gz
-<<<<<<< HEAD
-  dict_path: ../datasets/ru/AllRu-freq-dict.txt.gz
-=======
   dict_path: datasets/ru/AllRu-freq-dict.txt.gz
   short_words_path: datasets/ru/AllRu-short-words.txt.gz
->>>>>>> 0c085da80b0c3aecb420ec643bb561bcd701891c
   min_word_freq: 1
   min_word_length: 3
   penalty: 6.5

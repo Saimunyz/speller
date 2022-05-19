@@ -323,16 +323,6 @@ func (s *Speller) SpellCorrect3(query string) string {
 
 	queries := s.splitByWords(longWords, 3) //генерим триграммы из длинных слов
 	for i, query := range queries {
-<<<<<<< HEAD
-		// //если первого слова триграммы нет в словаре, то мы отдаем спеллеру
-		// if ok := needToFix(query, wordsToCorrect); !ok && i != len(queries)-1 {
-		// 	//если первое слово триграммы есть в словаре, то мы всю триграмму без изменений добавляем в саджесты
-		// 	//потому что при сборке ответа из саджестов, берется только первое слово саджеста
-		// 	suggestions = append(suggestions, query)
-		// 	continue
-		// }
-		suggestion := s.spellcorrector.SpellCorrect(query)
-=======
 		//если первого слова триграммы нет в словаре, то мы отдаем спеллеру
 		if ok := needToFix(query[0], wordsToCorrect); !ok && i != len(queries)-1 {
 			//если первое слово триграммы есть в словаре, то мы всю триграмму без изменений добавляем в саджесты
@@ -341,7 +331,6 @@ func (s *Speller) SpellCorrect3(query string) string {
 			continue
 		}
 		suggestion := s.spellcorrector.SpellCorrect2(query)
->>>>>>> 0c085da80b0c3aecb420ec643bb561bcd701891c
 		queries[i] = suggestion[0].Tokens
 	}
 
