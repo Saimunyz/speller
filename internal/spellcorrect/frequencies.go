@@ -13,6 +13,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/Saimunyz/speller/internal/config"
 	"github.com/segmentio/fasthash/fnv1a"
 )
 
@@ -26,10 +27,10 @@ type Frequencies struct {
 }
 
 // NewFrequencis - creates new Frequencies instance
-func NewFrequencies(minWord, minFreq int) *Frequencies {
+func NewFrequencies(cfg *config.Config) *Frequencies {
 	ans := Frequencies{
-		MinWord:      minWord,
-		MinFreq:      minFreq,
+		MinWord:      cfg.SpellerConfig.MinWordLength,
+		MinFreq:      cfg.SpellerConfig.MinWordFreq,
 		UniGramProbs: make(map[uint64]float64),
 		Trie:         newWordTrie(0),
 	}
@@ -297,12 +298,10 @@ func (o *WordTrie) put(key ngram) {
 func (o *WordTrie) search(key ngram) *Node {
 	tmp := o.Root
 	for i := 0; i < len(key); i++ {
-		if tmp != nil {
-			if next, ok := tmp.Children[key[i]]; ok {
-				tmp = next
-			} else {
-				return nil
-			}
+		if next, ok := tmp.Children[key[i]]; ok {
+			tmp = next
+		} else {
+			return nil
 		}
 	}
 	return tmp

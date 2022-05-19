@@ -38,110 +38,110 @@ func main() {
 	// correct = speller.SpellCorrect3("жеский")
 	// fmt.Println("жеское ->", correct)
 
-	correct := speller.SpellCorrect3("кружеа иреуголка л бедо кормчневая тиго ьольшая подпрок для мкжчины для жннщины")
+	correct := speller.SpellCorrect("кружеа иреуголка л бедо кормчневая тиго ьольшая подпрок для мкжчины для жннщины")
 	fmt.Println("кружеа иреуголка л бедо кормчневая тиго ьольшая подпрок для мкжчины для жннщины ->", correct)
 
-	correct = speller.SpellCorrect3("тайсеая сазь для лечениф гриюка ногтнй гртбок")
+	correct = speller.SpellCorrect("тайсеая сазь для лечениф гриюка ногтнй гртбок")
 	fmt.Println("тайсеая сазь для лечениф гриюка ногтнй гртбок ->", correct)
 
-	correct = speller.SpellCorrect3("платя дя женщин")
+	correct = speller.SpellCorrect("платя дя женщин")
 	fmt.Println("платя дя женщин ->", correct)
 
-	correct = speller.SpellCorrect2("красавки")
+	correct = speller.SpellCorrect("красавки")
 	fmt.Println("красавки ->", correct)
 
-	correct = speller.SpellCorrect2("Желтая скатерть")
+	correct = speller.SpellCorrect("Желтая скатерть")
 	fmt.Println("Желтая скатерть ->", correct)
 
-	correct = speller.SpellCorrect2("желиая скаткрть")
+	correct = speller.SpellCorrect("желиая скаткрть")
 	fmt.Println("желиая скаткрть ->", correct)
 
-	correct = speller.SpellCorrect2("томат дородгый")
+	correct = speller.SpellCorrect("томат дородгый")
 	fmt.Println("томат дородгый ->", correct)
-	correct = speller.SpellCorrect2("органайзер дородгый")
+	correct = speller.SpellCorrect("органайзер дородгый")
 	fmt.Println("органайзер дородгый ->", correct)
 
-	correct = speller.SpellCorrect2("томат дородный")
+	correct = speller.SpellCorrect("томат дородный")
 	fmt.Println("томат дородный ->", correct)
 
-	correct = speller.SpellCorrect2("органайзер дорожный")
+	correct = speller.SpellCorrect("органайзер дорожный")
 	fmt.Println("органайзер дорожный ->", correct)
 
-	correct = speller.SpellCorrect2("томат дорожный")
+	correct = speller.SpellCorrect("томат дорожный")
 	fmt.Println("томат дорожный ->", correct)
 
-	correct = speller.SpellCorrect2("органайзер дородный")
+	correct = speller.SpellCorrect("органайзер дородный")
 	fmt.Println("органайзер дородный ->", correct)
 
-	correct = speller.SpellCorrect2("чемодан дородный")
+	correct = speller.SpellCorrect("чемодан дородный")
 	fmt.Println("чемодан дородный ->", correct)
 
-	correct = speller.SpellCorrect2("амоскитная асетка на впрогулочную акляску")
+	correct = speller.SpellCorrect("амоскитная асетка на впрогулочную акляску")
 	fmt.Println("амоскитная асетка на впрогулочную акляску ->", correct)
 
-	correct = speller.SpellCorrect2("брпття сьругацеие ьпудно бытб юоглм")
+	correct = speller.SpellCorrect("брпття сьругацеие ьпудно бытб юоглм")
 	fmt.Println("брпття сьругацеие ьпудно бытб юоглм ->", correct)
 
-	correct = speller.SpellCorrect2("блузув женчквя серебоистаф")
+	correct = speller.SpellCorrect("блузув женчквя серебоистаф")
 	fmt.Println("блузув женчквя серебоистаф ->", correct)
 
-	correct = speller.SpellCorrect2("обрдрк из воолс в видк кочы")
+	correct = speller.SpellCorrect("обрдрк из воолс в видк кочы")
 	fmt.Println("обрдрк из воолс в видк кочы ->", correct)
 
-	correct = speller.SpellCorrect2("разршревающее иаслр доя мпчсажа")
+	correct = speller.SpellCorrect("разршревающее иаслр доя мпчсажа")
 	fmt.Println("разршревающее иаслр доя мпчсажа ->", correct)
 
-	correct = speller.SpellCorrect2("шиииер ддя воолс")
+	correct = speller.SpellCorrect("шиииер ддя воолс")
 	fmt.Println("шиииер ддя воолс ->", correct)
 
-	correct = speller.SpellCorrect2("раниц жля еачальнфх клвсмов")
+	correct = speller.SpellCorrect("раниц жля еачальнфх клвсмов")
 	fmt.Println("ранец жля еачальнфх клвсмов ->", correct)
 
-	correct = speller.SpellCorrect2("винеи пуз")
+	correct = speller.SpellCorrect("винеи пуз")
 	fmt.Println("винеи пуз ->", correct)
 
-	correct = speller.SpellCorrect2("емеость ддя мцсора бкз крфшки")
+	correct = speller.SpellCorrect("емеость ддя мцсора бкз крфшки")
 	fmt.Println("емеость ддя мцсора бкз крфшки ->", correct)
 
-	correct = speller.SpellCorrect2("коем длч куттеулы")
+	correct = speller.SpellCorrect("коем длч куттеулы")
 	fmt.Println("коем длч куттеулы ->", correct)
 
-	correct = speller.SpellCorrect2("цаоь фндрр оркл рачправлфет крыоьч")
+	correct = speller.SpellCorrect("цаоь фндрр оркл рачправлфет крыоьч")
 	fmt.Println("цаоь фндрр оркл рачправлфет крыоьч ->", correct)
 
-	correct = speller.SpellCorrect2("подмтавкп под пучкт кпаснок аеднрко")
+	correct = speller.SpellCorrect("подмтавкп под пучкт кпаснок аеднрко")
 	fmt.Println("подмтавкп под пучкт кпаснок аеднрко ->", correct)
 
 	fmt.Println("-----------------")
 
-	correct = speller.SpellCorrect2("томат дорожный")
+	correct = speller.SpellCorrect("томат дорожный")
 	fmt.Println("томат дорожный ->", correct)
 
-	correct = speller.SpellCorrect2("чемодан дородный")
+	correct = speller.SpellCorrect("чемодан дородный")
 	fmt.Println("чемодан дородный ->", correct)
 
-	correct = speller.SpellCorrect2("жесткие толстовки")
+	correct = speller.SpellCorrect("жесткие толстовки")
 	fmt.Println("жесткие толстовки ->", correct)
 
-	correct = speller.SpellCorrect2("костюм для тонировок")
+	correct = speller.SpellCorrect("костюм для тонировок")
 	fmt.Println("костюм для тонировок ->", correct)
 
-	correct = speller.SpellCorrect2("летний плач")
+	correct = speller.SpellCorrect("летний плач")
 	fmt.Println("летний плач ->", correct)
 
-	correct = speller.SpellCorrect2("набор свечей столик")
+	correct = speller.SpellCorrect("набор свечей столик")
 	fmt.Println("набор свечей столик ->", correct)
 
-	correct = speller.SpellCorrect2("жирное мыло")
+	correct = speller.SpellCorrect("жирное мыло")
 	fmt.Println("жирное мыло ->", correct)
 
-	correct = speller.SpellCorrect2("фотошторы для пальчика")
+	correct = speller.SpellCorrect("фотошторы для пальчика")
 	fmt.Println("фотошторы для пальчика ->", correct)
 
-	correct = speller.SpellCorrect2("повседневное боги")
+	correct = speller.SpellCorrect("повседневное боги")
 	fmt.Println("повседневное боги ->", correct)
 
-	correct = speller.SpellCorrect2("подушка разовая")
+	correct = speller.SpellCorrect("подушка разовая")
 	fmt.Println("подушка разовая ->", correct)
 
 	fmt.Println(time.Since(now))

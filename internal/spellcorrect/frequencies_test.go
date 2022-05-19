@@ -4,12 +4,17 @@ import (
 	"math"
 	"strings"
 	"testing"
+
+	"github.com/Saimunyz/speller/internal/config"
 )
 
 func TestFrequencies(t *testing.T) {
 	tokens := []string{"I", "program", "go", "I", "code", "and", "I", "cook", "code"}
 	in := strings.NewReader(strings.Join(tokens, " "))
-	freq := NewFrequencies(0, 0)
+	cfg := &config.Config{
+		SpellerConfig: config.SpellerConfig{MinWordFreq: 0, MinWordLength: 0},
+	}
+	freq := NewFrequencies(cfg)
 	if err := freq.TrainNgrams(in); err != nil {
 		t.Errorf(err.Error())
 		return

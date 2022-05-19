@@ -6,13 +6,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Saimunyz/speller/internal/config"
 	"github.com/Saimunyz/speller/internal/spell"
 )
 
 func getSpellCorrector() *SpellCorrector {
 	tokenizer := NewSimpleTokenizer()
-	freq := NewFrequencies(0, 0)
-	sc := NewSpellCorrector(tokenizer, freq, []float64{100, 15, 5}, false, 1, 4)
+	cfg := &config.Config{
+		SpellerConfig: config.SpellerConfig{MinWordFreq: 1, MinWordLength: 5, AutoTrainMode: false, Penalty: 1},
+	}
+	freq := NewFrequencies(cfg)
+	sc := NewSpellCorrector(tokenizer, freq, []float64{100, 15, 5}, cfg)
 	return sc
 }
 

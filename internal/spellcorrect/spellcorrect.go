@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Saimunyz/speller/internal/config"
 	"github.com/Saimunyz/speller/internal/spell"
 	"github.com/segmentio/fasthash/fnv1a"
 )
@@ -44,6 +45,7 @@ type SpellCorrector struct {
 	spell         *spell.Spell
 	weights       []float64
 	minFreq       int
+	minLen        int
 	penalty       float64
 	autoTrainMode bool
 }
@@ -53,18 +55,17 @@ func NewSpellCorrector(
 	tokenizer Tokenizer,
 	frequencies FrequencyContainer,
 	weights []float64,
-	autoTrainMode bool,
-	minFreq int,
-	penalty float64,
+	cfg *config.Config,
 ) *SpellCorrector {
 	ans := SpellCorrector{
 		Tokenizer:     tokenizer,
 		frequencies:   frequencies,
 		spell:         spell.New(),
 		weights:       weights,
-		minFreq:       minFreq,
-		penalty:       penalty,
-		autoTrainMode: autoTrainMode,
+		minFreq:       cfg.SpellerConfig.MinWordFreq,
+		minLen:        cfg.SpellerConfig.MinWordLength,
+		penalty:       cfg.SpellerConfig.Penalty,
+		autoTrainMode: cfg.SpellerConfig.AutoTrainMode,
 	}
 	ans.spell.MaxEditDistance = 3
 	ans.spell.PrefixLength = 8
@@ -246,7 +247,7 @@ func (o *SpellCorrector) lookupTokens(tokens []string) []WordsWithDistList {
 
 	for i := range tokens {
 		// dont look at short words
-		if len([]rune(tokens[i])) < 2 || strings.ContainsAny(tokens[i], "1234567890") {
+		if len([]rune(tokens[i])) < o.minLen || strings.ContainsAny(tokens[i], "1234567890") {
 			allSuggestions[i] = append(allSuggestions[i], NewWordWithDist(tokens[i], 0))
 			continue
 		}
@@ -293,7 +294,6 @@ func (o *SpellCorrector) lookupTokens(tokens []string) []WordsWithDistList {
 	return allSuggestions
 }
 
-
 // lookupTokens - finds all the suggestions given by the spell library and takes the top amountOfSuggestions of them
 func (o *SpellCorrector) lookupTokens2(tokens []string) []WordsWithDistList {
 	const amountOfSuggestions = 5
@@ -301,7 +301,7 @@ func (o *SpellCorrector) lookupTokens2(tokens []string) []WordsWithDistList {
 
 	for i := range tokens {
 		// dont look at short words
-		if len([]rune(tokens[i])) < 2 || strings.ContainsAny(tokens[i], "1234567890") {
+		if len([]rune(tokens[i])) < o.minLen || strings.ContainsAny(tokens[i], "1234567890") {
 			allSuggestions[i] = append(allSuggestions[i], NewWordWithDist(tokens[i], 0))
 			continue
 		}

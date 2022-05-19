@@ -19,8 +19,6 @@ import (
 	"sync/atomic"
 	"unicode"
 
-	// "github.com/eskriett/strmet"
-	// "github.com/DMA8/levenDistance"
 	"github.com/Saimunyz/speller/internal/strdist"
 	"github.com/mitchellh/mapstructure"
 	"github.com/tidwall/gjson"

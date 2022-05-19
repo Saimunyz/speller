@@ -31,7 +31,7 @@ func NewSpeller(configPapth string) *Speller {
 	}
 
 	tokenizerWords := spellcorrect.NewSimpleTokenizer()
-	freq := spellcorrect.NewFrequencies(cfg.SpellerConfig.MinWordLength, cfg.SpellerConfig.MinWordFreq)
+	freq := spellcorrect.NewFrequencies(cfg)
 
 	weights := []float64{
 		cfg.SpellerConfig.UnigramWeight,
@@ -43,9 +43,7 @@ func NewSpeller(configPapth string) *Speller {
 		tokenizerWords,
 		freq,
 		weights,
-		cfg.SpellerConfig.AutoTrainMode,
-		cfg.SpellerConfig.MinWordFreq,
-		cfg.SpellerConfig.Penalty,
+		cfg,
 	)
 
 	spller := &Speller{
@@ -82,7 +80,7 @@ func (s *Speller) Train() {
 	defer dictGz.Close()
 
 	commonDict := spellcorrect.FreqDicts{
-		Name:   "defatult",
+		Name:   defaultDict,
 		Reader: dictGz,
 	}
 
@@ -102,7 +100,7 @@ func (s *Speller) Train() {
 		defer shortWordsGz.Close()
 
 		shortWords = spellcorrect.FreqDicts{
-			Name:   "shortWords",
+			Name:   shortWordsDict,
 			Reader: shortWordsGz,
 		}
 	}
@@ -163,6 +161,25 @@ func (o *Speller) joinByWords(lines [][]string, splitedByWords int) []string {
 	}
 
 	return query
+}
+
+func (s *Speller) SpellCorrect(query string) string {
+	if len(query) < 1 {
+		return query
+	}
+
+	spltQuery, _ := s.spellcorrector.Tokenizer.Tokens(strings.NewReader(query))
+
+	queries := s.splitByWords(spltQuery, 3)
+	for i, query := range queries {
+		suggestion := s.spellcorrector.SpellCorrect(query)
+		queries[i] = suggestion[0].Tokens
+	}
+
+	words := s.joinByWords(queries, 3)
+
+	// returns the most likely option
+	return strings.Join(words, " ")
 }
 
 func (s *Speller) SpellCorrect2(query string) string {
