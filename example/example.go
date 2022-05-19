@@ -12,10 +12,10 @@ import (
 func main() {
 	fmt.Println("Example of usage")
 	// create speller
-	speller := speller.NewSpeller("config.yaml")
+	speller := speller.NewSpeller("../config.yaml")
 
 	// load model
-	err := speller.LoadModel("models/AllRu-model.gz")
+	err := speller.LoadModel("../models/AllRu-model.gz")
 	if err != nil {
 		fmt.Printf("No such file: %v\n", err)
 		//panic(err)
@@ -48,7 +48,7 @@ func main() {
 	fmt.Println("платя дя женщин ->", correct)
 
 	correct = speller.SpellCorrect2("красавки")
-	fmt.Println("красовки ->", correct)
+	fmt.Println("красавки ->", correct)
 
 	correct = speller.SpellCorrect2("Желтая скатерть")
 	fmt.Println("Желтая скатерть ->", correct)

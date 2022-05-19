@@ -86,26 +86,35 @@ func (s *Speller) Train() {
 		Reader: dictGz,
 	}
 
-	shortWordsFile, err := os.Open(s.cfg.SpellerConfig.ShortWordsPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer shortWordsFile.Close()
+	var shortWords spellcorrect.FreqDicts
 
-	shortWordsGz, err := gzip.NewReader(shortWordsFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer shortWordsGz.Close()
+	if s.cfg.SpellerConfig.ShortWordsPath != "" {
+		shortWordsFile, err := os.Open(s.cfg.SpellerConfig.ShortWordsPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer shortWordsFile.Close()
 
-	shortWordsDict := spellcorrect.FreqDicts{
-		Name:   "shortWords",
-		Reader: shortWordsGz,
-	}
+		shortWordsGz, err := gzip.NewReader(shortWordsFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer shortWordsGz.Close()
 
+		shortWords = spellcorrect.FreqDicts{
+			Name:   "shortWords",
+			Reader: shortWordsGz,
+		}
+	}
 	log.Printf("starting training...")
 	t0 := time.Now()
-	s.spellcorrector.Train(sentencesGz, commonDict, shortWordsDict)
+
+	if shortWords.Name != "" {
+		s.spellcorrector.Train(sentencesGz, commonDict, shortWords)
+	} else {
+		s.spellcorrector.Train(sentencesGz, commonDict)
+	}
+
 	t1 := time.Now()
 	log.Printf("Finished[%s]\n", t1.Sub(t0))
 
@@ -244,27 +253,30 @@ func (s *Speller) LoadModel(filename string) error {
 	}
 	defer dictGz.Close()
 
-	shortWordsFile, err := os.Open(s.cfg.SpellerConfig.ShortWordsPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer shortWordsFile.Close()
+	if s.cfg.SpellerConfig.ShortWordsPath != "" {
+		shortWordsFile, err := os.Open(s.cfg.SpellerConfig.ShortWordsPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer shortWordsFile.Close()
 
-	shortWordsGz, err := gzip.NewReader(shortWordsFile)
-	if err != nil {
-		log.Fatal(err)
+		shortWordsGz, err := gzip.NewReader(shortWordsFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer shortWordsGz.Close()
+
+		err = s.spellcorrector.LoadFreqDict(shortWordsGz, shortWordsDict)
+		if err != nil {
+			return err
+		}
 	}
-	defer shortWordsGz.Close()
 
 	err = s.spellcorrector.LoadFreqDict(dictGz, defaultDict)
 	if err != nil {
 		return err
 	}
 
-	err = s.spellcorrector.LoadFreqDict(shortWordsGz, shortWordsDict)
-	if err != nil {
-		return err
-	}
 	fmt.Printf("Model loaded[%v]: %s\n", time.Since(t), filename)
 
 	return nil
@@ -312,7 +324,7 @@ func (s *Speller) SpellCorrect3(query string) string {
 
 	queries := s.splitByWords(longWords, 3) //генерим триграммы из длинных слов
 	for i, query := range queries {
-		//если первого слова триграммы нет в словаре, то мы отдаем спеллеру
+		// //если первого слова триграммы нет в словаре, то мы отдаем спеллеру
 		// if ok := needToFix(query, wordsToCorrect); !ok && i != len(queries)-1 {
 		// 	//если первое слово триграммы есть в словаре, то мы всю триграмму без изменений добавляем в саджесты
 		// 	//потому что при сборке ответа из саджестов, берется только первое слово саджеста
