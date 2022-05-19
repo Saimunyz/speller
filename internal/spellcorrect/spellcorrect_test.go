@@ -52,21 +52,29 @@ func TestTrain(t *testing.T) {
 func BenchmarkProduct(b *testing.B) {
 	left := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"}
 	right := [][]string{{"1"}, {"2"}, {"3"}, {"4"}, {"5"}, {"6"}, {"7"}, {"8"}, {"9"}, {"10"}}
+	l := NewWordWithDistList(left)
+	r := make([]WordsWithDistList, len(right))
+	for i := range r {
+		r[i] = NewWordWithDistList(right[i])
+	}
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		product(left, right)
+		product(l, r)
 	}
 }
 
 func BenchmarkCombos(b *testing.B) {
-	tokens := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"}
-	var in [][]string
+	input := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"}
+
+	tokens := NewWordWithDistList(input)
+
+	var in []WordsWithDistList
 	for i := range tokens {
-		var sug []string
+		var sug WordsWithDistList
 		if i != 0 && i < len(tokens)/2 {
 			for k := 1; k <= i; k++ {
-				sug = append(sug, strings.Repeat(fmt.Sprintf("%d", i), k))
+				sug = append(sug, NewWordWithDist(strings.Repeat(fmt.Sprintf("%d", i), k), 0))
 			}
 		}
 		if len(sug) == 0 {
@@ -114,7 +122,9 @@ func TestSpellCorrect(t *testing.T) {
 }
 
 func TestGetSuggestionCandidates(t *testing.T) {
-	tokens := []string{"1", "2", "3"}
+	input := []string{"1", "2", "3"}
+
+	tokens := NewWordWithDistList(input)
 
 	sugMap := map[int]spell.SuggestionList{
 		0: {
@@ -127,18 +137,18 @@ func TestGetSuggestionCandidates(t *testing.T) {
 		2: {},
 	}
 
-	var allSuggestions [][]string
+	var allSuggestions []WordsWithDistList
 	for i := range tokens {
 		allSuggestions = append(allSuggestions, nil)
 		allSuggestions[i] = append(allSuggestions[i], tokens[i])
 		suggestions := sugMap[i]
 		for j := 0; j < len(suggestions) && j < 10; j++ {
-			allSuggestions[i] = append(allSuggestions[i], suggestions[j].Word)
+			allSuggestions[i] = append(allSuggestions[i], NewWordWithDist(suggestions[j].Word, 0))
 		}
 
 	}
 
-	expected := [][]string{
+	tmp := [][]string{
 
 		{"aa", "b", "3"},
 		{"aa", "2", "3"},
@@ -148,10 +158,14 @@ func TestGetSuggestionCandidates(t *testing.T) {
 		{"1", "2", "3"},
 	}
 
-	sc := getSpellCorrector()
-	dist := make(map[string]float64)
+	expected := make([]WordsWithDistList, len(tmp))
+	for i := range expected {
+		expected[i] = NewWordWithDistList(tmp[i])
+	}
 
-	candidates := sc.getSuggestionCandidates(allSuggestions, dist)
+	sc := getSpellCorrector()
+
+	candidates := sc.getSuggestionCandidates(allSuggestions)
 
 	for i, sug := range candidates {
 		if sug.Tokens == nil {
@@ -170,7 +184,7 @@ func TestGetSuggestionCandidates(t *testing.T) {
 		expect[hashTokens(expected[i])] = true
 	}
 	for i := range candidates {
-		if !expect[hashTokens(candidates[i].Tokens)] {
+		if !expect[hashTokens(NewWordWithDistList(candidates[i].Tokens))] {
 			t.Errorf("%v not in expected", candidates[i].Tokens)
 			return
 		}

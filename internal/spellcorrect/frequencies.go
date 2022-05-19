@@ -228,10 +228,10 @@ func (o *Frequencies) TrainNgrams(in io.Reader) error {
 }
 
 // Get - getter for frequencies of N-grams
-func (o *Frequencies) Get(tokens []WordWithDist) float64 {
+func (o *Frequencies) Get(tokens []string) float64 {
 	hashes := make([]uint64, len(tokens))
 	for i := range tokens {
-		hashes[i] = hashString(tokens[i].word)
+		hashes[i] = hashString(tokens[i])
 	}
 	if len(hashes) == 1 {
 		return o.UniGramProbs[hashes[0]]

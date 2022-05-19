@@ -22,7 +22,7 @@ type Suggestion struct {
 // FrequencyContainer - all the necessary functions for working with the frequency layer
 type FrequencyContainer interface {
 	TrainNgrams(in io.Reader) error
-	Get(tokens []WordWithDist) float64
+	Get(tokens []string) float64
 	LoadModel(filename string) error
 	SaveModel(filename string) error
 }
@@ -157,23 +157,21 @@ func hashTokens(tokens []WordWithDist) uint64 {
 }
 
 // product - computes product() of given slice
-func product(a []WordWithDist, b [][]WordWithDist) [][]WordWithDist {
+func product(a WordsWithDistList, b []WordsWithDistList) []WordsWithDistList {
 	size := len(a) * len(b)
-	items := make([][]WordWithDist, size)
+	items := make([]WordsWithDistList, size)
 
 	var k int
 	for i := range a {
 		for j := range b {
 			var h int
-			items[k] = make([]WordWithDist, len(b[0])+1)
+			items[k] = make(WordsWithDistList, len(b[0])+1)
 			for _, word := range a[i : i+1 : i+1] {
-				items[k][h].word = word.word
-				items[k][h].dist = word.dist
+				items[k][h] = word
 				h++
 			}
 			for _, word := range b[j] {
-				items[k][h].word = word.word
-				items[k][h].dist = word.dist
+				items[k][h] = word
 				h++
 			}
 			k++
@@ -183,8 +181,8 @@ func product(a []WordWithDist, b [][]WordWithDist) [][]WordWithDist {
 }
 
 // sliceToSliceOfSlice - change slice to slice of slice
-func sliceToSliceOfSlice(words []WordWithDist) [][]WordWithDist {
-	res := make([][]WordWithDist, len(words))
+func sliceToSliceOfSlice(words WordsWithDistList) []WordsWithDistList {
+	res := make([]WordsWithDistList, len(words))
 	for i := range res {
 		res[i] = words[i : i+1]
 	}
@@ -193,7 +191,7 @@ func sliceToSliceOfSlice(words []WordWithDist) [][]WordWithDist {
 }
 
 // combos - permutation of all sentences
-func combos(in [][]WordWithDist) [][]WordWithDist {
+func combos(in []WordsWithDistList) []WordsWithDistList {
 	tmpP := sliceToSliceOfSlice(in[len(in)-1])
 
 	for i := len(in) - 2; i >= 0; i-- {
@@ -211,14 +209,41 @@ type WordWithDist struct {
 	dist float64
 }
 
-func (w *WordWithDist) String() string {
+func NewWordWithDist(str string, dst float64) WordWithDist {
+	return WordWithDist{
+		word: str,
+		dist: dst,
+	}
+}
+
+type WordsWithDistList []WordWithDist
+
+func NewWordWithDistList(str []string) WordsWithDistList {
+	result := make(WordsWithDistList, len(str))
+	for i, s := range str {
+		result[i] = NewWordWithDist(s, 0)
+	}
+	return result
+}
+
+func (w WordsWithDistList) toString() []string {
+	result := make([]string, len(w))
+
+	for i, word := range w {
+		result[i] = word.word
+	}
+
+	return result
+}
+
+func (w WordWithDist) String() string {
 	return w.word
 }
 
 // lookupTokens - finds all the suggestions given by the spell library and takes the top 20 of them
-func (o *SpellCorrector) lookupTokens(tokens []string) ([][]WordWithDist, map[string]float64) {
+func (o *SpellCorrector) lookupTokens(tokens []string) []WordsWithDistList {
 	const amountOfSuggestions = 10
-	allSuggestions := make([][]WordWithDist, len(tokens))
+	allSuggestions := make([]WordsWithDistList, len(tokens))
 	dist := make(map[string]float64, len(tokens))
 
 	for i := range tokens {
@@ -272,7 +297,7 @@ func (o *SpellCorrector) lookupTokens(tokens []string) ([][]WordWithDist, map[st
 		}
 	}
 
-	return allSuggestions, dist
+	return allSuggestions
 }
 
 // lookupTokens - finds all the suggestions given by the spell library and takes the top 20 of them
@@ -370,18 +395,8 @@ func newSuggestions() []Suggestion {
 	return suggestions
 }
 
-func convertToString(words []WordWithDist) []string {
-	result := make([]string, len(words))
-
-	for i, word := range words {
-		result[i] = word.word
-	}
-
-	return result
-}
-
 // getSuggestionCandidates - returns slice of fixed typos with context N-grams
-func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]WordWithDist, dist map[string]float64) []Suggestion {
+func (o *SpellCorrector) getSuggestionCandidates(allSuggestions []WordsWithDistList) []Suggestion {
 	// combine suggestions
 	suggestionStrings := combos(allSuggestions)
 	seen := make(map[uint64]struct{}, len(suggestionStrings))
@@ -392,8 +407,8 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]WordWithDist
 		if _, ok := seen[h]; !ok {
 			seen[h] = struct{}{}
 			sugges := Suggestion{
-				score:  o.score(suggestionStrings[i], dist),
-				Tokens: convertToString(suggestionStrings[i]),
+				score:  o.score(suggestionStrings[i]),
+				Tokens: suggestionStrings[i].toString(),
 			}
 			pos := getInsertPosition(suggestions, sugges)
 			insertPosition(suggestions, pos, sugges)
@@ -406,8 +421,8 @@ func (o *SpellCorrector) getSuggestionCandidates(allSuggestions [][]WordWithDist
 // SpellCorrect - returns suggestions
 func (o *SpellCorrector) SpellCorrect(tokens []string) []Suggestion {
 	// tokens, _ := o.Tokenizer.Tokens(strings.NewReader(s))
-	allSuggestions, dist := o.lookupTokens(tokens)
-	items := o.getSuggestionCandidates(allSuggestions, dist)
+	allSuggestions := o.lookupTokens(tokens)
+	items := o.getSuggestionCandidates(allSuggestions)
 
 	return items
 }
@@ -473,34 +488,34 @@ func getPenalty(prob float64, dist float64) float64 {
 }
 
 // GetUnigram - returns unigram with penalties
-func (o *SpellCorrector) GetUnigram(tokens []WordWithDist) float64 {
+func (o *SpellCorrector) GetUnigram(tokens WordsWithDistList) float64 {
 	unigrams := tokens[:1:1]
 
-	prob := o.frequencies.Get(unigrams)
+	prob := o.frequencies.Get(unigrams.toString())
 
 	return prob
 }
 
 // GetBigram - returns bigrams
-func (o *SpellCorrector) GetBigram(tokens []WordWithDist) float64 {
+func (o *SpellCorrector) GetBigram(tokens WordsWithDistList) float64 {
 	bigrams := tokens[:2:2]
 
-	prob := o.frequencies.Get(bigrams)
+	prob := o.frequencies.Get(bigrams.toString())
 
 	return prob
 }
 
 // GetTrigram - returns trigrams
-func (o *SpellCorrector) GetTrigram(tokens []WordWithDist) float64 {
+func (o *SpellCorrector) GetTrigram(tokens WordsWithDistList) float64 {
 	trigrams := tokens[:3:3]
 
-	prob := o.frequencies.Get(trigrams)
+	prob := o.frequencies.Get(trigrams.toString())
 
 	return prob
 }
 
 // calculateBigramScore - returns bigram score of a given words
-func (o *SpellCorrector) calculateBigramScore(ngrams []WordWithDist, dist map[string]float64) float64 {
+func (o *SpellCorrector) calculateBigramScore(ngrams WordsWithDistList) float64 {
 	var score float64
 
 	// penalty := len(bigrams)
@@ -508,7 +523,7 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []WordWithDist, dist map[st
 	for i := 0; i+2 <= len(ngrams); i++ {
 		bigrams := ngrams[i : i+2 : i+2]
 
-		bigram := o.frequencies.Get(bigrams)
+		bigram := o.frequencies.Get(bigrams.toString())
 		if bigram != 0 {
 			bigram -= getPenalty(bigram, bigrams[0].dist+bigrams[1].dist)
 
@@ -520,7 +535,7 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []WordWithDist, dist map[st
 
 			score += unigram + bigram
 		} else {
-			tmp := o.calculateUnigramScore(bigrams, dist)
+			tmp := o.calculateUnigramScore(bigrams)
 			score += (tmp + tmp)
 		}
 	}
@@ -528,7 +543,7 @@ func (o *SpellCorrector) calculateBigramScore(ngrams []WordWithDist, dist map[st
 }
 
 // calculateUnigramScore - returns unigram score of a given words
-func (o *SpellCorrector) calculateUnigramScore(ngrams []WordWithDist, dist map[string]float64) float64 {
+func (o *SpellCorrector) calculateUnigramScore(ngrams WordsWithDistList) float64 {
 	var score float64
 
 	penalty := len(ngrams)
@@ -536,7 +551,7 @@ func (o *SpellCorrector) calculateUnigramScore(ngrams []WordWithDist, dist map[s
 	for i := 0; i+1 <= len(ngrams); i++ {
 		unigrams := ngrams[i : i+1 : i+1]
 
-		unigram := o.frequencies.Get(unigrams)
+		unigram := o.frequencies.Get(unigrams.toString())
 		if unigram != 0 {
 			penalty--
 			unigram -= getPenalty(unigram, unigrams[0].dist)
@@ -552,13 +567,13 @@ func (o *SpellCorrector) calculateUnigramScore(ngrams []WordWithDist, dist map[s
 }
 
 // calculateTrigramScore -  returns trigrams score of a given words
-func (o *SpellCorrector) calculateTrigramScore(ngrams []WordWithDist, dist map[string]float64) float64 {
+func (o *SpellCorrector) calculateTrigramScore(ngrams WordsWithDistList) float64 {
 	var score float64
 
 	for i := 0; i+3 <= len(ngrams); i++ {
 		trigrams := ngrams[i : i+3 : i+3]
 
-		trigram := o.frequencies.Get(trigrams)
+		trigram := o.frequencies.Get(trigrams.toString())
 		if trigram != 0 {
 			trigram -= getPenalty(trigram, trigrams[0].dist+trigrams[1].dist+trigrams[2].dist)
 
@@ -576,7 +591,7 @@ func (o *SpellCorrector) calculateTrigramScore(ngrams []WordWithDist, dist map[s
 
 			score += unigram + bigram + trigram
 		} else {
-			tmp := o.calculateBigramScore(trigrams, dist)
+			tmp := o.calculateBigramScore(trigrams)
 			score += tmp + tmp
 		}
 	}
@@ -593,7 +608,7 @@ func (o *SpellCorrector) applyPenalty(score float64, penalty int) float64 {
 }
 
 // score - scoring each sentence
-func (o *SpellCorrector) score(tokens []WordWithDist, dist map[string]float64) float64 {
+func (o *SpellCorrector) score(tokens WordsWithDistList) float64 {
 	// score := 0.0
 	// for i := 1; i < 4; i++ {
 	// 	grams := TokenNgrams(tokens, i)
@@ -608,11 +623,11 @@ func (o *SpellCorrector) score(tokens []WordWithDist, dist map[string]float64) f
 
 	switch {
 	case len(tokens) == 1:
-		score += o.calculateUnigramScore(tokens, dist)
+		score += o.calculateUnigramScore(tokens)
 	case len(tokens) == 2:
-		score += o.calculateBigramScore(tokens, dist)
+		score += o.calculateBigramScore(tokens)
 	case len(tokens) >= 3:
-		score += o.calculateTrigramScore(tokens, dist)
+		score += o.calculateTrigramScore(tokens)
 
 	}
 
