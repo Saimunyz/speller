@@ -38,9 +38,6 @@ func (o *Config) Validate() error {
 	if o.SpellerConfig.DictPath == "" {
 		return fmt.Errorf("you need to set 'dict_path'")
 	}
-	if o.SpellerConfig.ShortWordsPath == "" {
-		return fmt.Errorf("you need to set 'short_words_path'")
-	}
 	if o.SpellerConfig.MinWordLength == 0 {
 		return fmt.Errorf("you need to set non zero 'min_word_length'")
 	}

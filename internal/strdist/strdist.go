@@ -21,7 +21,42 @@ const (
 	insertWeight        = 1.01 //1.01
 )
 
-var tableRunes = []string{
+var tablePhoneticRunes = []string{
+	"о",  //а
+	"п",  //б
+	"",   //в
+	"",   //г
+	"т",  //д
+	"иэ", //е
+	"",   //ж
+	"с",  //з
+	"еы", //и
+	"е",  //й
+	"",   //к
+	"",   //л
+	"",   //м
+	"",   //н
+	"а",  //о
+	"б",  //п
+	"",   //р
+	"з",  //с
+	"д",  //т
+	"ю",  //у
+	"",   //ф
+	"",   //х
+	"ст", //ц
+	"",   //ч
+	"",   //ш
+	"",   //щ
+	"",   //ъ
+	"и",  //ы
+	"",   //ь
+	"е",  //э
+	"у",  //ю
+	"а",  //я
+}
+
+var tableCloseRunes = []string{
 	"впо",  //а
 	"ью",   //б
 	"ыа",   //в
@@ -54,6 +89,41 @@ var tableRunes = []string{
 	"жх",   //э
 	"б.",   //ю
 	"фч",   //я
+}
+
+var tableNotCloseRunes = []string{
+	"укесми", //а
+	"лдж",    //б
+	"цукчсм", //в
+	"рол",    //г
+	"шщзбю.", //д
+	"апр",    //е
+	"щзхбю.", //ж
+	"джэ",    //з
+	"апр",    //и
+	"яыу",    //й
+	"вап",    //к
+	"гшщьбю", //л
+	"вап",    //м
+	"про",    //н
+	"нгштьб", //о
+	"кенмит", //п
+	"енгить", //р
+	"ыва",    //с
+	"про",    //т
+	"ыва",    //у
+	"ця",     //ф
+	"жэ\\",   //х
+	"фывк",   //ц
+	"фыв",    //ч
+	"олд",    //ш
+	"лдж",    //щ
+	"жэ\\",   //ъ
+	"йцуячс", //ы
+	"рол",    //ь
+	"зхъ.",   //э
+	"джэ",    //ю
+	"ыв",     //я
 }
 
 // DamerauLevenshteinRunes is the same as DamerauLevenshtein but accepts runes
@@ -149,12 +219,12 @@ func DamerauLevenshteinRunesBuffer2(r1, r2 []rune, maxDist int, x, y []float64) 
 				} else if above < current { //delete
 					current = above + deletionWeight
 				} else {
-					// subst := getWeight(s1Char, s2Char, tableRunes);
-					current += getWeight(s1Char, s2Char, tableRunes)
+					// subst := getWeight(s1Char, s2Char, tableCloseRunes);
+					current += getWeight(s1Char, s2Char)
 					// checkInd := s1Char - 'а'
 					// if checkInd >= 0 && checkInd <= 31 {
-					// 	// if variants := tableRunes[s1Char-'а']; variants[0] == s2Char || variants[1] == s2Char {
-					// 	if tableRunes[checkInd][0] == s2Char || tableRunes[checkInd][1] == s2Char {
+					// 	// if variants := tableCloseRunes[s1Char-'а']; variants[0] == s2Char || variants[1] == s2Char {
+					// 	if tableCloseRunes[checkInd][0] == s2Char || tableCloseRunes[checkInd][1] == s2Char {
 					// 		current += 0.2 //closeChange 0.2
 					// 	} else {
 					// 		// fmt.Println(string(save1), string(save2))
@@ -174,7 +244,7 @@ func DamerauLevenshteinRunesBuffer2(r1, r2 []rune, maxDist int, x, y []float64) 
 
 				}
 
-				// current = min(left * insertWeight, above * deletionWeight, current + getWeight(s1Char, s2Char, tableRunes))
+				// current = min(left * insertWeight, above * deletionWeight, current + getWeight(s1Char, s2Char, tableCloseRunes))
 				//current++
 				if i != 0 && j != 0 && s1Char == prevS2Char && prevS1Char ==
 					s2Char {
@@ -195,11 +265,15 @@ func DamerauLevenshteinRunesBuffer2(r1, r2 []rune, maxDist int, x, y []float64) 
 	return current
 }
 
-func getWeight(s1Char, s2Char rune, tableRunes []string) float64 {
+func getWeight(s1Char, s2Char rune) float64 {
 	checkInd := s1Char - 'а'
 	if checkInd >= 0 && checkInd <= 31 {
-		if strings.ContainsRune(tableRunes[checkInd], s2Char) {
-			return 0.4 //closeChange
+		if strings.ContainsRune(tablePhoneticRunes[checkInd], s2Char) {
+			return 0.2
+		} else if strings.ContainsRune(tableCloseRunes[checkInd], s2Char) {
+			return 0.4
+		} else if strings.ContainsRune(tableNotCloseRunes[checkInd], s2Char) {
+			return 0.8
 		} else {
 			return 1 //notCloseChange
 		}
