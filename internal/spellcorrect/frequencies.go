@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"encoding/gob"
+	"fmt"
 	"io"
 	"log"
 	"math"
@@ -295,12 +296,15 @@ func (o *WordTrie) put(key ngram) {
 
 // search - looking for ngrams in trie
 func (o *WordTrie) search(key ngram) *Node {
+	fmt.Println(key)
 	tmp := o.Root
 	for i := 0; i < len(key); i++ {
-		if next, ok := tmp.Children[key[i]]; ok {
-			tmp = next
-		} else {
-			return nil
+		if tmp != nil {
+			if next, ok := tmp.Children[key[i]]; ok {
+				tmp = next
+			} else {
+				return nil
+			}
 		}
 	}
 	return tmp
