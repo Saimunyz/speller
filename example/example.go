@@ -32,19 +32,19 @@ func main() {
 	now := time.Now()
 
 	// correct typos
-	correct := speller.SpellCorrect2("канканцелярский")
-	fmt.Println("канканцелярский ->", correct)
+	// correct := speller.SpellCorrect3("канканцелярский")
+	// fmt.Println("канканцелярский ->", correct)
 
-	correct = speller.SpellCorrect2("жеский")
-	fmt.Println("жеское ->", correct)
+	// correct = speller.SpellCorrect3("жеский")
+	// fmt.Println("жеское ->", correct)
 
-	correct = speller.SpellCorrect2("кружеа иреуголка л бедо кормчневая тиго ьольшая подпрок для мкжчины для жннщины")
+	correct := speller.SpellCorrect3("кружеа иреуголка л бедо кормчневая тиго ьольшая подпрок для мкжчины для жннщины")
 	fmt.Println("кружеа иреуголка л бедо кормчневая тиго ьольшая подпрок для мкжчины для жннщины ->", correct)
 
-	correct = speller.SpellCorrect2("тайсеая сазь для лечениф гриюка ногтнй гртбок")
+	correct = speller.SpellCorrect3("тайсеая сазь для лечениф гриюка ногтнй гртбок")
 	fmt.Println("тайсеая сазь для лечениф гриюка ногтнй гртбок ->", correct)
 
-	correct = speller.SpellCorrect2("платя дя женщин")
+	correct = speller.SpellCorrect3("платя дя женщин")
 	fmt.Println("платя дя женщин ->", correct)
 
 	correct = speller.SpellCorrect2("красавки")
