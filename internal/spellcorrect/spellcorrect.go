@@ -209,6 +209,7 @@ type WordWithDist struct {
 	dist float64
 }
 
+// NewWordWithDist - creates new WordWithDist
 func NewWordWithDist(str string, dst float64) WordWithDist {
 	return WordWithDist{
 		word: str,
@@ -218,6 +219,7 @@ func NewWordWithDist(str string, dst float64) WordWithDist {
 
 type WordsWithDistList []WordWithDist
 
+// NewWordWithDistList - creates new WordsWithDistList form []string
 func NewWordWithDistList(str []string) WordsWithDistList {
 	result := make(WordsWithDistList, len(str))
 	for i, s := range str {
@@ -226,6 +228,7 @@ func NewWordWithDistList(str []string) WordsWithDistList {
 	return result
 }
 
+// toString - convert WordsWithDistList to []string
 func (w WordsWithDistList) toString() []string {
 	result := make([]string, len(w))
 
@@ -236,21 +239,15 @@ func (w WordsWithDistList) toString() []string {
 	return result
 }
 
-func (w WordWithDist) String() string {
-	return w.word
-}
-
-// lookupTokens - finds all the suggestions given by the spell library and takes the top 20 of them
+// lookupTokens - finds all the suggestions given by the spell library and takes the top amountOfSuggestions of them
 func (o *SpellCorrector) lookupTokens(tokens []string) []WordsWithDistList {
 	const amountOfSuggestions = 10
 	allSuggestions := make([]WordsWithDistList, len(tokens))
-	dist := make(map[string]float64, len(tokens))
 
 	for i := range tokens {
 		// dont look at short words
 		if len([]rune(tokens[i])) < 2 || strings.ContainsAny(tokens[i], "1234567890") {
-			allSuggestions[i] = append(allSuggestions[i], WordWithDist{word: tokens[i]})
-			dist[tokens[i]] = 0
+			allSuggestions[i] = append(allSuggestions[i], NewWordWithDist(tokens[i], 0))
 			continue
 		}
 
@@ -283,17 +280,13 @@ func (o *SpellCorrector) lookupTokens(tokens []string) []WordsWithDistList {
 				// if wordExist && suggestions[j].Distance > 1 {
 				// 	continue
 				// }
-				tmp := WordWithDist{word: suggestions[j].Word, dist: float64(suggestions[j].Distance) + float64(j)/2*o.penalty}
-				allSuggestions[i] = append(allSuggestions[i], tmp)
-				if _, ok := dist[suggestions[j].Word]; !ok {
-					dist[suggestions[j].Word] = float64(suggestions[j].Distance) + float64(j)/2*o.penalty
-				}
+				dist := float64(suggestions[j].Distance) + float64(j)/2*o.penalty
+				allSuggestions[i] = append(allSuggestions[i], NewWordWithDist(suggestions[j].Word, dist))
 			}
 		}
 		// if no suggestions returns token
 		if len(allSuggestions[i]) == 0 {
-			allSuggestions[i] = append(allSuggestions[i], WordWithDist{word: tokens[i]})
-			dist[tokens[i]] = 0
+			allSuggestions[i] = append(allSuggestions[i], NewWordWithDist(tokens[i], 0))
 		}
 	}
 
