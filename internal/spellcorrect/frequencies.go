@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"compress/gzip"
 	"encoding/gob"
-	"fmt"
 	"io"
 	"log"
 	"math"
