@@ -296,7 +296,6 @@ func (o *WordTrie) put(key ngram) {
 
 // search - looking for ngrams in trie
 func (o *WordTrie) search(key ngram) *Node {
-	fmt.Println(key)
 	tmp := o.Root
 	for i := 0; i < len(key); i++ {
 		if tmp != nil {
